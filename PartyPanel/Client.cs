@@ -29,11 +29,26 @@ namespace PartyPanel
             return mainThread.Equals(thread);
         }
     }
+
+    // Is there a class or better way to replace this?
+    internal class AtomicBool
+    {
+        public volatile bool b;
+
+        public AtomicBool(bool b)
+        {
+            this.b = b;
+        }
+    }
+
     class Client
     {
         private Network.Client client;
         private Timer heartbeatTimer = new Timer();
         private ThreadTester threadTester;
+        // The amount of songs loaded until a packet is sent.
+        // TODO: make configurable?
+        private const int QueueThreshold = 30;
 
         public void Start()
         {
@@ -75,11 +90,7 @@ namespace PartyPanel
                     Logger.Debug("X");
                     HMMainThreadDispatcher.instance.Enqueue(new Action(async () =>
                     {
-                        await GetSongList(Plugin.masterLevelList);
-                        var unused = Task.Run(() =>
-                        {
-                            SendSongList().ConfigureAwait(false);
-                        });
+                        await SendAllSongList(Plugin.masterLevelList);
 
                     }));
                 }
@@ -96,52 +107,79 @@ namespace PartyPanel
             Logger.Debug("Server disconnected!");
         }
 
-        private List<PreviewBeatmapLevel> subPacketListCached = new List<PreviewBeatmapLevel>();
+        // Hash: Level
+        private Dictionary<string, PreviewBeatmapLevel> subPacketListCached = new Dictionary<string, PreviewBeatmapLevel>();
 
 
-        public async Task GetSongList(List<IPreviewBeatmapLevel> levels)
+        public async Task SendAllSongList(List<IPreviewBeatmapLevel> levels)
         {
-            List<PreviewBeatmapLevel> subpacketList = new List<PreviewBeatmapLevel>();
+            // Send cache
+            if (levels.TrueForAll(l => subPacketListCached.ContainsKey(l.levelID)))
+            {
+                await Task.Run(async () =>
+                {
+                    // just send all songs since they're cached
+                    await SendSongList(subPacketListCached.Values);
+                });
+                return;
+            }
+
             PlayerData playerData = Resources.FindObjectsOfTypeAll<PlayerDataModel>().FirstOrDefault().playerData;
-            List<Task<PreviewBeatmapLevel>> tasks = new List<Task<PreviewBeatmapLevel>>();
+
+            Dictionary<string, PreviewBeatmapLevel> subpacketList = new Dictionary<string, PreviewBeatmapLevel>();
+            var beatmapLevelsQueue = new Queue<PreviewBeatmapLevel>();
+
+            var running = new AtomicBool(true);
+            var queueTask = Task.Run(async () =>
+            {
+                while (running.b)
+                {
+                    if (beatmapLevelsQueue.Count < QueueThreshold) continue;
+
+                    // Copy queue
+                    var queueClone = new Queue<PreviewBeatmapLevel>(beatmapLevelsQueue);
+                    // then clear
+                    beatmapLevelsQueue.Clear();
+                    await SendSongList(queueClone);
+                }
+
+                // Make sure that the queue is finally finished
+                if (beatmapLevelsQueue.Count != 0)
+                {
+                    await SendSongList(beatmapLevelsQueue);
+                    beatmapLevelsQueue.Clear();
+                }
+            });
 
             foreach (var level in levels)
             {
-                tasks.Add(ConvertToPacketType(level, playerData));
+                var levelConverted = await ConvertToPacketType(level, playerData);
+                beatmapLevelsQueue.Enqueue(levelConverted);
+                subpacketList[levelConverted.LevelId] = levelConverted;
             }
 
-            subpacketList.AddRange(await Task.WhenAll(tasks));
 
             subPacketListCached = subpacketList;
+            running.b = false;
+            await queueTask;
         }
 
-        public async Task SendSongList()
+        public async Task SendSongList(IEnumerable<PreviewBeatmapLevel> songs)
         {
             Logger.Debug("F");
 
             //Check if we are connected
             if (client != null && client.Connected)
             {
-
-                var songSendingList = new List<Task>();
-
-                // Send each song individually
-                // Task.Run runs in a thread pool, so this is probably fine
-                subPacketListCached.ForEach(level =>
-                    {
-                        songSendingList.Add(Task.Run(() =>
-                        {
-                            var loadedSong = new LoadedSong {level = level};
-                            client.Send(new Packet(loadedSong).ToBytes());
-                        }));
-                    });
-                Task.WaitAll(songSendingList.ToArray());
+                var songSendingList = new SongList {Levels = songs.ToArray()};
+                client.Send(new Packet(songSendingList).ToBytes());
             }
             else
             {
-                var unused = SendSongList().ConfigureAwait(false);
+                var unused = SendSongList(songs).ConfigureAwait(false);
             }
         }
+
         public Texture2D GetReadableTexForUnreadableTex(Texture2D tex)
         {
             Logger.Debug("Is Main Thread: " + threadTester.TestThread(Thread.CurrentThread).ToString());
@@ -259,7 +297,7 @@ namespace PartyPanel
                 LoadSong loadSong = packet.SpecificPacket as LoadSong;
 
                 LoadedSong loaded = new LoadedSong();
-                loaded.level = subPacketListCached.First(x => x.LevelId == loadSong.levelId);
+                loaded.level = subPacketListCached.First(x => x.Value.LevelId == loadSong.levelId).Value;
                 LoadSong(loaded.level, Plugin.masterLevelList.First(x => x.levelID == loadSong.levelId));
             }
             else if (packet.Type == PacketType.Command)

@@ -3,9 +3,11 @@ using SongCore;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+using System.Threading;
+using UnityEngine;  
 using Logger = PartyPanelShared.Logger;
+using System.Reflection;
+using IPA.Utilities;
 
 /*
  * Created by Moon on 11/12/2018
@@ -22,7 +24,7 @@ namespace PartyPanel
         public string Name => "PartyPanel";
         public string Version => "0.0.1";
 
-        private AlwaysOwnedContentSO _alwaysOwnedContent;
+        private BeatmapLevelsModel beatmapLevelsModel;
 
         public static List<IPreviewBeatmapLevel> masterLevelList;
 
@@ -35,41 +37,14 @@ namespace PartyPanel
 
             Loader.SongsLoadedEvent += (Loader _, ConcurrentDictionary<string, CustomPreviewBeatmapLevel> __) =>
             {
-                if (_alwaysOwnedContent == null) _alwaysOwnedContent = Resources.FindObjectsOfTypeAll<AlwaysOwnedContentSO>().First();
+
+                if (beatmapLevelsModel == null) beatmapLevelsModel = Resources.FindObjectsOfTypeAll<BeatmapLevelsModel>().First();
 
                 masterLevelList = new List<IPreviewBeatmapLevel>();
-                for (int i = 0; i < _alwaysOwnedContent.alwaysOwnedPacks.Count(); i++)
-                {
-                    masterLevelList.AddRange(_alwaysOwnedContent.alwaysOwnedPacks[i].beatmapLevelCollection.beatmapLevels);
-                }
-                masterLevelList.AddRange(Loader.CustomLevelsCollection.beatmapLevels);
-
-                client.SendSongList(masterLevelList);
+                var values = beatmapLevelsModel.GetField<Dictionary<string, IPreviewBeatmapLevel>, BeatmapLevelsModel>("_loadedPreviewBeatmapLevels").Values.ToArray();
+                
+                masterLevelList.AddRange(values);
             };
-        }
-
-        public void OnApplicationQuit()
-        {
-        }
-
-        public void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)
-        {
-        }
-
-        public void OnSceneUnloaded(Scene scene)
-        {
-        }
-
-        public void OnActiveSceneChanged(Scene prevScene, Scene nextScene)
-        {
-        }
-
-        public void OnUpdate()
-        {
-        }
-
-        public void OnFixedUpdate()
-        {
         }
     }
 }

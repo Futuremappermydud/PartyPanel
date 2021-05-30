@@ -12,7 +12,9 @@ namespace PartyPanelShared
         Command,
         LoadSong,
         LoadedSong,
-        PlaySong
+        PlaySong,
+        ServerMetadata,
+        PreviewSong
     }
 
     public class Packet
@@ -25,8 +27,8 @@ namespace PartyPanelShared
 
         public int Size { get; set; }
         public PacketType Type { get; set; }
-
-        public object SpecificPacket { get; set; }
+            
+        public object SpecificPacket { get; set; }  
 
         public Packet(object specificPacket)
         {

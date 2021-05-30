@@ -32,11 +32,6 @@ namespace PartyPanel.Network
 
         private static ManualResetEvent connectDone = new ManualResetEvent(false);
 
-        private HttpListener _listener;
-        private CancellationTokenSource _cancellationToken;
-        private string _pageData;
-        private readonly SemaphoreSlim _requestLock = new SemaphoreSlim(1, 1);
-
         public bool Connected
         {
             get
@@ -52,76 +47,118 @@ namespace PartyPanel.Network
 
         public void Start()
         {
-            if (_pageData == null)
-            {
-                var reader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("PartyPanel.index.html"));
-                _pageData = reader.ReadToEnd();
-            }
+            IPAddress ipAddress = IPAddress.Loopback;
+            IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
 
-            if (_listener != null)
-            {
-                return;
-            }
+            Socket client = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-            _cancellationToken = new CancellationTokenSource();
-            _listener = new HttpListener { Prefixes = { $"http://localhost:50101/" } };
-            _listener.Start();
-
-
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        var httpListenerContext = await _listener.GetContextAsync().ConfigureAwait(false);
-                        await OnContext(httpListenerContext).ConfigureAwait(false);
-                    }
-                    catch (Exception e)
-                    {
-                    }
-                }
-
-                // ReSharper disable once FunctionNeverReturns
-            }).ConfigureAwait(false);
+            client.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), client);
+            connectDone.WaitOne();
         }
-        public async void Send(byte[] data)
-        {
 
-        }
-        private async Task OnContext(HttpListenerContext ctx)
+        private void ConnectCallback(IAsyncResult ar)
         {
-            await _requestLock.WaitAsync();
             try
             {
-                var request = ctx.Request;
-                var response = ctx.Response;
+                // Retrieve the socket from the state object.  
+                Socket client = (Socket)ar.AsyncState;
 
-                if (request.HttpMethod == "POST" && request.Url.AbsolutePath == "/song")
-                {
-                    var reader = new StreamReader(request.InputStream, request.ContentEncoding);
-                    var postStr = await reader.ReadToEndAsync().ConfigureAwait(false);
-                    Console.WriteLine(postStr);
-                }
-                else
-                {
-                    var pageBuilder = new StringBuilder(_pageData);
+                // Complete the connection.  
+                client.EndConnect(ar);
 
-                    var data = Encoding.UTF8.GetBytes(pageBuilder.ToString());
-                    response.ContentType = "text/html";
-                    response.ContentEncoding = Encoding.UTF8;
-                    response.ContentLength64 = data.LongLength;
-                    await response.OutputStream.WriteAsync(data, 0, data.Length);
-                }
+                // Create the player object.
+                player = new ClientPlayer();
+                player.workSocket = client;
 
-                response.Close();
+                //Signal to continue after connect
+                connectDone.Set();
+
+                // Begin receiving the data from the remote device.  
+                client.BeginReceive(player.buffer, 0, ClientPlayer.BufferSize, 0, new AsyncCallback(ReadCallback), player);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
+                Logger.Debug(e.ToString());
             }
-            finally
+        }
+
+        private void ReadCallback(IAsyncResult ar)
+        {
+            try
             {
+                ClientPlayer player = (ClientPlayer)ar.AsyncState;
+                Socket client = player.workSocket;
+
+                // Read data from the remote device.  
+                int bytesRead = client.EndReceive(ar);
+
+                if (bytesRead > 0)
+                {
+                    var currentBytes = new byte[bytesRead];
+                    Buffer.BlockCopy(player.buffer, 0, currentBytes, 0, bytesRead);
+
+                    player.accumulatedBytes.AddRange(currentBytes);
+                    if (player.accumulatedBytes.Count >= Packet.packetHeaderSize)
+                    {
+                        //If we're not at the start of a packet, increment our position until we are, or we run out of bytes
+                        var accumulatedBytes = player.accumulatedBytes.ToArray();
+                        while (!Packet.StreamIsAtPacket(accumulatedBytes) && accumulatedBytes.Length >= Packet.packetHeaderSize)
+                        {
+                            player.accumulatedBytes.RemoveAt(0);
+                            accumulatedBytes = player.accumulatedBytes.ToArray();
+                        }
+
+                        if (Packet.PotentiallyValidPacket(accumulatedBytes))
+                        {
+                            PacketRecieved?.Invoke(Packet.FromBytes(accumulatedBytes));
+                            player.accumulatedBytes.Clear();
+                        }
+                    }
+
+                    // Get the rest of the data.  
+                    client.BeginReceive(player.buffer, 0, ClientPlayer.BufferSize, 0, new AsyncCallback(ReadCallback), player);
+                }
             }
+            catch (Exception e)
+            {
+                Logger.Debug(e.ToString());
+                ServerDisconnected_Internal();
+            }
+        }
+
+        public void Send(byte[] data)
+        {
+            Logger.Debug("Sending " + data.Length.ToString() + " Bytes");
+            player.workSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), player.workSocket);
+        }
+
+        private void SendCallback(IAsyncResult ar)
+        {
+            try
+            {
+                // Retrieve the socket from the state object.  
+                Socket client = (Socket)ar.AsyncState;
+
+                // Complete sending the data to the remote device.  
+                int bytesSent = client.EndSend(ar);
+            }
+            catch (Exception e)
+            {
+                Logger.Debug(e.ToString());
+                ServerDisconnected_Internal();
+            }
+        }
+
+        private void ServerDisconnected_Internal()
+        {
+            Shutdown();
+            ServerDisconnected?.Invoke();
+        }
+
+        public void Shutdown()
+        {
+            if (player.workSocket.Connected) player.workSocket.Shutdown(SocketShutdown.Both);
+            player.workSocket.Close();
         }
     }
 }

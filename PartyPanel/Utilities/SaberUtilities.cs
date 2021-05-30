@@ -49,21 +49,15 @@ namespace PartyPanel
             flow = (SoloFreePlayFlowCoordinator)Resources.FindObjectsOfTypeAll<MainFlowCoordinator>().First().GetField("_soloFreePlayFlowCoordinator");
             Action<IBeatmapLevel> SongLoaded = (loadedLevel) =>
             {
-                Logger.Debug("G");
                 MenuTransitionsHelper _menuSceneSetupData = Resources.FindObjectsOfTypeAll<MenuTransitionsHelper>().First();
                 IDifficultyBeatmap diffbeatmap = loadedLevel.beatmapLevelData.GetDifficultyBeatmap(characteristic, difficulty);
-                Logger.Debug("L");
                 GameplaySetupViewController gameplaySetupViewController = (GameplaySetupViewController)typeof(SinglePlayerLevelSelectionFlowCoordinator).GetField("_gameplaySetupViewController", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(flow);
-                Logger.Debug("D");
                 OverrideEnvironmentSettings environmentSettings = gameplaySetupViewController.environmentOverrideSettings;
                 ColorScheme scheme = gameplaySetupViewController.colorSchemesSettings.GetSelectedColorScheme();
-                //GameplayModifiers modifiers = gameplaySetupViewController.gameplayModifiers;
                 PlayerSpecificSettings settings = gameplaySetupViewController.playerSettings;
                 //TODO: re add modifier customizability
                 
-                PracticeSettings practiceSettings = ConvertPractice(packet.practiceSettings);
-                GameplayModifiers modifiers = ConvertModifiers(packet.gameplayModifiers, gameplaySetupViewController.gameplayModifiers);
-                Logger.Debug(diffbeatmap.level.levelID + " " + scheme.colorSchemeId);
+                GameplayModifiers modifiers = gameplaySetupViewController.gameplayModifiers;
                 _menuSceneSetupData.StartStandardLevel(
                     "Solo",
                     diffbeatmap,
@@ -72,7 +66,7 @@ namespace PartyPanel
                     scheme,
                     modifiers,
                     settings,
-                    practiceSettings,
+                    null,
                     "Menu",
                     false,
                     null,
@@ -84,8 +78,7 @@ namespace PartyPanel
                 Button button = Resources.FindObjectsOfTypeAll<Button>().Where(x => x != null && x.name == "SoloButton").First();
                 button.onClick.Invoke();
             }
-            if ((level is PreviewBeatmapLevelSO && await HasDLCLevel(level.levelID)) ||
-                        level is CustomPreviewBeatmapLevel)
+            if ((level is PreviewBeatmapLevelSO /* && await HasDLCLevel(level.levelID)*/) || level is CustomPreviewBeatmapLevel)
             {
                 Logger.Debug("Loading DLC/Custom level...");
                 var result = await GetLevelFromPreview(level);

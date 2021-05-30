@@ -6,10 +6,10 @@ namespace PartyPanelShared.Models
     public class PlaySong
     {
         public string levelId;
+        public string difficulty;
         public Characteristic characteristic;
-        public Characteristic.BeatmapDifficulty difficulty;
-        public PlayerSpecificSettings playerSettings;
-        public GameplayModifiers gameplayModifiers;
-        public PracticeSettings practiceSettings;
+        //public PlayerSpecificSettings playerSettings;
+        //public GameplayModifiers gameplayModifiers;
+        //public PracticeSettings practiceSettings;
     }
 }

@@ -1,0 +1,95 @@
+﻿@using PartyPanelShared.Models;
+@using PartyPanelShared;
+@using PartyPanelUI.Pages;
+
+@if (level != null)
+{
+    <div class="overlay @(isPlaying ? "TransitionOverlay" : "")">
+        <div class="NowPlaying">
+            <h1 style="text-align: center">Now Playing</h1>
+            <div id="NowPlayingData">
+                <div class="DetailContainer">
+                    <img class="SongDetailImage" src="data:image/png;base64,@PartyPanelUI.GlobalData.covers[level.LevelId]" />
+                    <div class="SongTextContainer">
+                        <p class="Title" align="left">@level.Name</p>
+                        <p class="AuthorMapperDetail" align="left">
+                            @level.Author @if (!String.IsNullOrEmpty(level.Mapper))
+                            {
+                                <span style="font-size: 15pt;">[<span style="color: cadetblue">@level.Mapper</span>]</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+                <div class="MiddleContainer">
+                    <div class="ScoreInfo">
+                        <p class="ScoreText">Score: @score</p>
+                        <p class="ScoreText">Accuracy: @accuracy.ToString("0.##")%</p>
+                    </div>
+                    <button class="ReturnButton" @onclick="ReturnButton"><p class="ReturnText">Return To Menu</p></button>
+                </div>
+                <div class="TimelineContainer">
+                    <p class="TimelineTime" id="Time">@TimeSpan.FromSeconds(elapsedTime).ToString(@"m\:ss")</p>
+                    <div class="Timeline">
+                        <div class="TimelineThumb" style="left: @(left)px" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public PartyPanelShared.Models.PreviewBeatmapLevel level { get; set; }
+    public int score { get; set; } = 0;
+    public double accuracy { get; set; } = 0.0f;
+    public int elapsedTime { get; set; } = 0;
+    public int totalTime
+    {
+        get
+        {
+            if (_totalTime == 0) return 1;
+            return _totalTime;
+        }
+    }
+    private int _totalTime { get; set; } = 1;
+    public int left { get => (int)(410.0f * ((float)elapsedTime / (float)totalTime)) + 65; }
+    public bool isPlaying = false;
+
+    protected override void OnInitialized()
+    {
+        Server.OnUpdate += async (x) => { await OnUpdate(x); };
+        Server.OnNowPlaying += async (x) => { await OnNowPlaying(x); };
+    }
+    public async Task OnUpdate(PartyPanelShared.Models.NowPlayingUpdate update)
+    {
+        await Task.Delay(1);
+        score = update.score;
+        accuracy = update.accuracy;
+        elapsedTime = update.elapsed;
+        _totalTime = update.totalTime;
+        await InvokeAsync(StateHasChanged);
+    }
+    public async Task OnNowPlaying(PartyPanelShared.Models.NowPlaying now)
+    {
+        await Task.Delay(1);
+        isPlaying = !now.isFinished;
+        if (isPlaying)
+        {
+
+            if(GlobalData.allSongs.ContainsKey(now.levelID))
+            {
+                level = GlobalData.allSongs[now.levelID];
+            }
+        }
+        else
+        {
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void ReturnButton()
+    {
+        GlobalData.server.Send(new Packet(new Command(Command.CommandType.ReturnToMenu)).ToBytes());
+    }
+}

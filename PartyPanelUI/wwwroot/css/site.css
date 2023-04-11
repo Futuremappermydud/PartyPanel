@@ -1,0 +1,578 @@
+body {
+    background-color: #333333;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+    width: 16px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1C1C1C;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+inert-style, title {
+    display: none;
+}
+
+.Container {
+    background-color: #474747;
+    border-radius: 10px;
+    width: 330px;
+    padding-left: 10px;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 10px;
+    margin: 10px;
+    border: none;
+}
+.Container.enabledTrue:hover {
+    background-color: #3D3D3D;
+}
+
+.ListTitleContainer {
+    display: flex;
+    flex-direction: row;
+}
+.DetailContainer {
+    max-width: 250px;
+    padding-left: 10px;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 10px;
+    margin: 10px;
+    border: none;
+    background: none;
+}
+
+.SongDetail {
+    background-color: #1A1A1A;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: 20px;
+    margin-top: 48px;
+    height: 700px;
+    display: flex;
+    flex-direction: column;
+    width: 350px;
+}
+
+.SongDetailImage {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+}
+
+.Container.enabledFalse:hover,
+.Container.enabledFalse:hover * {
+    background-color: #474747;
+}
+
+.SongImage {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    display: block;
+}
+
+.OwnedContainer {
+    height: 25px;
+    padding-left: 5px;
+    pointer-events: auto;
+}
+
+.OwnedJustif {
+    height: 20px;
+    transform: rotate(0deg);
+    transition: transform linear .1s;
+}
+.OwnedJustif:hover {
+    transform: rotate(45deg);
+    transition: transform linear .1s;
+}
+
+.OwnedContainer:hover .tooltiptext {
+    visibility: visible;
+}
+
+.tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: white !important;
+    color: #000;
+    text-align: center;
+    border-radius: 6px;
+    padding: 13px 0;
+    margin-left: 20px;
+    position: absolute;
+    z-index: 1;
+    transform: skew(-5deg);
+    font-family: 'teko', sans-serif;
+    font-size: 18px;
+}
+
+.SongTextContainer {
+    padding-left: 5px;
+}
+
+.SongMetaContainer {
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+.ListTitle {
+    color: white;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 22px;
+    text-overflow: ellipsis;
+    display: block;
+    position: relative;
+    white-space: nowrap;
+    max-width: 170px;
+    overflow: hidden;
+}
+
+.enabledFalse > .SongTextContainer > .ListTitleContainer > .ListTitle {
+    color: #888 !important;
+}
+
+.AuthorMapper {
+    color: grey;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 20px;
+    overflow: hidden;
+    width: 185px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.enabledFalse > .SongTextContainer > .AuthorMapper {
+    color: #666 !important;
+}
+
+.Title {
+    color: white;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 32px;
+    overflow: hidden;
+    width: 185px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.AuthorMapperDetail {
+    color: #9c9c9c;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 28px;
+    overflow: hidden;
+    width: 185px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.SubMetadata {
+    color: slategrey;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 18px;
+}
+
+.SongList {
+    width: 360px;
+    border-right: 100px;
+    display: flex;
+    align-items: center;
+    padding-top: 20px;
+    flex-direction: column;
+}
+
+.text-center {
+    display: flex;
+    flex-direction: row;
+}
+
+.Characteristics {
+    margin: 10px;
+    margin-top: auto;
+    padding: 5px;
+    background-color: #474747;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.charButton {
+    background: none;
+    border: none;
+}
+
+.diffButton {
+    background: none;
+    border: none;
+    font-family: 'Teko', sans-serif;
+    font-size: 18px;
+    color: white;
+}
+
+    .diffButton.active {
+        filter: opacity(0.5) drop-shadow(0 0 0 slategrey) saturate(2000%);
+    }
+
+.charImage {
+    width: 50px;
+    height: 50px;
+}
+
+.active > .charImage {
+    filter: opacity(0.5) drop-shadow(0 0 0 slategrey) saturate(2000%);
+}
+
+.charImage.active {
+    filter: opacity(0.5) drop-shadow(0 0 0 slategrey) saturate(2000%);
+}
+
+.selectedChar {
+    color: cadetblue;
+}
+
+.Difficulties {
+    margin: 10px;
+    margin-top: 10px;
+    margin-bottom: auto;
+    padding: 5px;
+    background-color: #474747;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.DifficultyContainer {
+    display: flex;
+    justify-content: space-evenly;
+    width: 280px;
+}
+
+.PlayBackground {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
+    width: 260px;
+    height: 50px;
+    background: linear-gradient(0deg, rgba(0,148,255,1) 0%, rgba(0,130,255,1) 100%);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: row;
+    transform: skew(-5deg);
+}
+
+.PlayButton {
+    display: block;
+    margin: auto;
+    width: 250px;
+    height: 40px;
+    background: linear-gradient(0deg, rgba(0,128,255,1) 0%, rgba(0,110,255,1) 100%);
+    border-radius: 10px;
+    border: none;
+    font-size: 25px;
+}
+
+.EditBackground {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+    margin-top: 10px;
+    width: 260px;
+    height: 50px;
+    background: linear-gradient(0deg, rgb(154 158 161) 0%, rgb(92 92 92) 100%);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: row;
+    transform: skew(-5deg);
+}
+
+.EditButton {
+    display: block;
+    margin: auto;
+    width: 250px;
+    height: 40px;
+    background: linear-gradient(0deg, rgb(118 118 118) 0%, rgb(78 78 78) 100%);
+    border-radius: 10px;
+    border: none;
+    font-size: 25px;
+}
+
+p {
+    font-family: 'Teko', sans-serif;
+    color: white;
+}
+
+h1 {
+    font-family: 'Teko', sans-serif;
+    color: white;
+    text-align: justify;
+    padding-top: 5px;
+}
+
+.leftButton {
+    width: 50px;
+    height: 50px;
+    display: block;
+    margin-right: 10px;
+    border-radius: 5px;
+    border: none;
+}
+
+    .leftButton:hover {
+        background-color: cadetblue;
+    }
+
+    .leftButton:active {
+        transform: rotate(-5deg);
+        -webkit-transform: rotate(-5deg);
+        -ms-transform: rotate(-5deg);
+    }
+
+.rightButton {
+    width: 50px;
+    height: 50px;
+    display: block;
+    margin-left: 10px;
+    border-radius: 5px;
+    border: none;
+}
+
+    .rightButton:hover {
+        background-color: cadetblue;
+    }
+
+    .rightButton:active {
+        transform: rotate(5deg);
+        -webkit-transform: rotate(5deg);
+        -ms-transform: rotate(5deg);
+    }
+
+.buttonImg {
+    width: 100%;
+}
+
+.SongListHeader {
+    display: flex;
+}
+
+.Modifier {
+    background-color: rgb(64 64 64 / 46%);
+    border-radius: 10px;
+    margin: 10px;
+    height: 75px;
+    display: flex;
+    margin-bottom: 0px;
+    border: none;
+}
+
+.Modifier:hover {
+    background: rgb(113,113,113);
+    background: linear-gradient(90deg, rgba(113,113,113,0.8743872549019608) 0%, rgb(64 64 64 / 46%) 100%);
+}
+
+.Modifier.enabled {
+    background: rgb(0,192,240);
+    background: linear-gradient(90deg, rgba(0,192,240,1) 0%, rgba(0,192,240,0.5) 100%);
+}
+
+.Modifier.enabled:hover {
+    background: rgb(0,192,240);
+    background: linear-gradient(90deg, rgba(0,192,240,1) 0%, rgba(0,192,240,1) 100%);
+}
+
+.Modifier.enabledNegative {
+    background: rgb(255,95,0);
+    background: linear-gradient(90deg, rgba(255,95,0,1) 0%, rgba(255,95,0,0.5) 100%);
+}
+
+.Modifier.enabledNegative:hover {
+    background: rgb(255,95,0);
+    background: linear-gradient(90deg, rgba(255,95,0,1) 0%, rgba(255,95,0,1) 100%);
+}
+
+.RightContainer {
+    display: flex;
+    margin-left: auto;
+    position: fixed;
+    right: -720px;
+    transition: right 0.5s;
+}
+
+.RightContainer.editing {
+    right: 5px;
+    transition: right 0.5s;
+}
+
+.ModifierGrid {
+    display: grid;
+    grid-template-columns: auto auto;
+}
+
+.ModifierName {
+    color: white;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 28px;
+    text-align: right;
+    height: 35px;
+}
+
+.ModifierSub {
+    color: slategrey;
+    margin: 0px;
+    margin-left: 5px;
+    font-family: 'Teko', sans-serif;
+    font-size: 18px;
+    text-align: right;
+}
+
+.texts {
+    margin-left: auto;
+    margin-right: 10px;
+    margin-top: 3px;
+}
+
+.Modifiers {
+    width: 700px;
+}
+
+.icon {
+    height: 100%;
+}
+
+.overlay {
+    background: rgb(0 0 0 / 50%);
+    backdrop-filter: blur(3px);
+    position: fixed;
+    width: 100%;
+    z-index: 1;
+    height: 100%;
+    opacity: 0%;
+    transition: opacity 0.5s ease-in-out;
+    pointer-events: none;
+    cursor: default;
+}
+
+    .overlay.TransitionOverlay {
+        opacity: 100%;
+        transition: opacity 0.5s ease-in-out;
+        pointer-events:all;
+        cursor: auto;
+    }
+
+@keyframes visible {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.NowPlaying {
+    background-color: #32313b;
+    width: 500px;
+    height: 400px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    border-radius: 10px;
+}
+
+.ScoreInfo {
+    background-color: lightslategrey;
+    width: 70%;
+    margin-left: 20px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.ScoreText {
+    padding-left: 20px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+    font-size: 25px;
+}
+
+.Timeline {
+    position: fixed;
+    top: 85%;
+    left: 65px;
+    height: 3px;
+    width: 83%;
+    background-color: white;
+    border-radius: 10px;
+}
+
+.TimelineTime {
+    position: fixed;
+    top: 81.5%;
+    left: 25px;
+    font-size: 22px;
+}
+
+.TimelineThumb {
+    position: fixed;
+    top: 84.2%;
+    height: 10px;
+    width: 10px;
+    background-color: cadetblue;
+    border-radius: 10px;
+}
+
+.ReturnButton {
+    background-color: lightslategrey;
+    width: 40%;
+    margin-left: 20px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    border: none;
+}
+
+.MiddleContainer {
+    display: flex;
+    width: 460px;
+    margin-right: 0px;
+}
+
+.ReturnText {
+    margin: auto;
+    color: white;
+    font-size: 27px;
+    font-family: 'Teko', sans-serif;
+}

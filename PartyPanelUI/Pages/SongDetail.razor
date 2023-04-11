@@ -1,0 +1,267 @@
+﻿@using PartyPanelShared.Models;
+@using PartyPanelShared;
+
+<div class="RightContainer @(isOpen ? "editing" : "")" id="RightSide">
+    @if (GlobalData.currentlevel != null)
+    {
+    <div class="SongDetail">
+        <div class="DetailContainer">
+            <img class="SongDetailImage" src="data:image/png;base64,@PartyPanelUI.GlobalData.covers[GlobalData.currentlevel.LevelId]" />
+            <div class="SongTextContainer">
+                <p class="Title" align="left">@GlobalData.currentlevel.Name</p>
+                <p class="AuthorMapperDetail" align="left">
+                    @GlobalData.currentlevel.Author @if (!String.IsNullOrEmpty(GlobalData.currentlevel.Mapper))
+                    {
+                        <span style="font-size: 15pt;">[<span style="color: cadetblue">@GlobalData.currentlevel.Mapper</span>]</span>
+                    }
+                </p>
+            </div>
+        </div>
+        <div class="Characteristics">
+            @foreach (PartyPanelShared.Models.Characteristic characteristic in GlobalData.currentlevel.chars)
+            {
+                <button class="charButton" @onclick="()=>SelectCharacteristic(characteristic)">
+                    @if (GlobalData.currentchar.Name == characteristic.Name)
+                    {
+                        <img class="charImage active" src="images/Characteristics/@PartyPanelUI.GlobalData.characteristics[characteristic.Name]" />
+                    }
+                    else
+                    {
+                        <img class="charImage" src="images/Characteristics/@PartyPanelUI.GlobalData.characteristics[characteristic.Name]"/>
+                    }
+                </button>
+            }
+        </div>
+        <div class="Difficulties">
+            <div class="DifficultyContainer">
+                @foreach (string difficulty in GlobalData.currentchar.diffs)
+                {
+                    @if (GlobalData.currentdiff == difficulty)
+                    {
+                        <button class="diffButton active" @onclick="()=>SelectDifficulty(GetID(difficulty))">
+                            @difficulty
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="diffButton" @onclick="()=>SelectDifficulty(GetID(difficulty))">
+                            @difficulty
+                        </button>
+                    }
+
+                }
+            </div>
+        </div>
+        <div class="EditBackground">
+            <button class="EditButton" @onclick="OpenOptions">
+                <p style="transform: skew(5deg); margin: 0px;">Edit Options</p>
+            </button>
+        </div>
+        <div class="PlayBackground">
+            <button class="PlayButton" @onclick="Play">
+                <p style="transform: skew(5deg); margin: 0px;">Play</p>
+            </button>
+        </div>
+    </div>
+    <div class="SongDetail Modifiers">
+        <div class="ModifierGrid">
+            @foreach (var modifier in GlobalData.Modifiers)
+            {
+                <button class="Modifier @classes[modifier.Name]" @onclick="()=>SelectModifier(modifier.Name)">
+                    <img class="icon" src="@modifier.Path" />
+                    <div class="texts">
+                        <p class="ModifierName">@modifier.Name</p>
+                        <p class="ModifierSub">@modifier.SubName</p>
+                    </div>
+                </button>
+            }
+        </div>
+    </div>
+    }
+</div>
+
+@code {
+    public Dictionary<string, string> classes = new Dictionary<string, string>()
+    {
+        { "No Fail", "" },
+        { "1 Life", "" },
+        { "4 Lives", "" },
+        { "No Bombs", "" },
+        { "No Walls", "" },
+        { "No Arrows", "" },
+        { "Ghost Notes", "" },
+        { "Disappearing Arrows", "" },
+        { "Small Notes(beta)", "" },
+        { "Pro Mode(beta)", "" },
+        { "Strict Angles(beta)", "" },
+        { "Zen Mode", "" },
+        { "Slower Song", "" },
+        { "Faster Song", "" },
+        { "Super Fast Song", "" }
+    };
+    public static Dictionary<string, string> negative = new Dictionary<string, string>()
+    {
+        { "No Fail", "enabledNegative" },
+        { "1 Life", "enabled" },
+        { "4 Lives", "enabled" },
+        { "No Bombs", "enabledNegative" },
+        { "No Walls", "enabledNegative" },
+        { "No Arrows", "enabledNegative" },
+        { "Ghost Notes", "enabled" },
+        { "Disappearing Arrows", "enabled" },
+        { "Small Notes(beta)", "enabled" },
+        { "Pro Mode(beta)", "enabled" },
+        { "Strict Angles(beta)", "enabled" },
+        { "Zen Mode", "enabledNegative" },
+        { "Slower Song", "enabledNegative" },
+        { "Faster Song", "enabled" },
+        { "Super Fast Song", "enabled" }
+    };
+    public static List<List<string>> mutuals = new List<List<string>>()
+    {
+        new List<string>{"Slower Song", "Faster Song", "Super Fast Song"},
+        new List<string>{"Disappearing Arrows", "Ghost Notes"},
+        new List<string>{"Disappearing Arrows", "No Arrows"},
+        new List<string>{"4 Lives", "1 Life"},
+    };
+
+    public bool isOpen = false;
+
+    protected override void OnInitialized()
+    {
+        GlobalData.SelectLevel = async (x) => { await Select(x); };
+    }
+
+    async Task Select(PreviewBeatmapLevel level)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void OpenOptions()
+    {
+        isOpen = !isOpen;
+        StateHasChanged();
+    }
+
+    void Play()
+    {
+        var play = new PlaySong();
+        play.difficulty = GlobalData.currentdiff;
+        play.characteristic = GlobalData.currentchar;
+        play.levelId = GlobalData.currentlevel.LevelId;
+        play.gameplayModifiers = GlobalData.currentmods;
+        Logger.Info(play.difficulty);
+        Logger.Info(play.characteristic.Name);
+        Logger.Info(play.levelId);
+        GlobalData.server.Send(new Packet(play).ToBytes());
+    }
+
+    void SelectDifficulty(string id)
+    {
+        int intid = int.Parse(id.Substring(5));
+        GlobalData.currentdiff = GlobalData.currentchar.diffs[intid];
+        StateHasChanged();
+    }
+
+    void SelectCharacteristic(Characteristic Char)
+    {
+        GlobalData.currentchar = Char;
+        StateHasChanged();
+    }
+
+    void SelectModifier(string id)
+    {
+        if(!classes.ContainsKey(id))
+        {
+            classes.Add(id, negative[id]);
+        }
+        else
+        {
+            if (classes[id] == "")
+            {
+                classes[id] = negative[id];
+                if(id != "Zen Mode")
+                {
+                    if(classes.ContainsKey("Zen Mode"))
+                        classes["Zen Mode"] = "";
+                }
+                if (id == "Zen Mode")
+                {
+                    var keys = classes.Keys.ToArray();
+                    for (int i = 0; i < classes.Count; i++)
+                    {
+                        if(keys[i] != "Zen Mode")
+                            classes[keys[i]] = "";
+                    }
+                }
+                if (id == "Disappearing Arrows")
+                {
+                    classes["No Arrows"] = "";
+                    classes["Ghost Notes"] = "";
+                }
+                if (id == "Strict Angles(beta)")
+                {
+                    classes["Pro Mode(beta)"] = negative["Pro Mode(beta)"];
+                }
+                for (int i = 0; i < mutuals.Count; i++)
+                {
+                    List<string> check = mutuals[i];
+                    if(check.Contains(id))
+                    {
+                        for (int x = 0; x < check.Count; x++)
+                        {
+                            if(check[x] != id)
+                                classes[check[x]] = "";
+                        }
+                    }
+                }
+            }
+            else
+            {
+                classes[id] = "";
+                if (id == "Pro Mode(beta)")
+                {
+                    classes["Strict Angles(beta)"] = "";
+                }
+            }
+        }
+        var modifiers = new GameplayModifiers();
+        modifiers.noFailOn0Energy = classes["No Fail"] != "";
+        modifiers.energyType = classes["4 Lives"] != "" ? GameplayModifiers.EnergyType.Battery : GameplayModifiers.EnergyType.Bar;
+        modifiers.instaFail = classes["1 Life"] != "";
+        modifiers.noBombs = classes["No Bombs"] != "";
+        modifiers.enabledObstacleType = classes["No Walls"] != "" ? GameplayModifiers.EnabledObstacleType.NoObstacles : GameplayModifiers.EnabledObstacleType.All;
+        modifiers.noArrows = classes["No Arrows"] != "";
+        modifiers.ghostNotes = classes["Ghost Notes"] != "";
+        modifiers.disappearingArrows = classes["Disappearing Arrows"] != "";
+        modifiers.smallCubes = classes["Small Notes(beta)"] != "";
+        modifiers.proMode = classes["Pro Mode(beta)"] != "";
+        modifiers.strictAngles = classes["Strict Angles(beta)"] != "";
+        modifiers.zenMode = classes["Zen Mode"] != "";
+        modifiers.songSpeed = GetSongSpeedFromValueGetter(classes["Slower Song"] != "", classes["Faster Song"] != "", classes["Super Fast Song"] != "");
+        GlobalData.currentmods = modifiers;
+        StateHasChanged();
+    }
+
+    string GetID(string diff)
+    {
+        return "diff_" + GlobalData.currentchar.diffs.ToList().IndexOf(diff).ToString();
+    }
+
+    public virtual GameplayModifiers.SongSpeed GetSongSpeedFromValueGetter(bool slowerSong, bool fasterSong, bool SuperFast)
+    {
+        if (SuperFast)
+        {
+            return GameplayModifiers.SongSpeed.SuperFast;
+        }
+        if (fasterSong)
+        {
+            return GameplayModifiers.SongSpeed.Faster;
+        }
+        if (slowerSong)
+        {
+            return GameplayModifiers.SongSpeed.Slower;
+        }
+        return GameplayModifiers.SongSpeed.Normal;
+    }
+}

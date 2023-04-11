@@ -1,0 +1,111 @@
+﻿@page "/"
+@using PartyPanelShared.Models;
+
+<PageTitle>Party Panel</PageTitle>
+
+<div class="text-center">
+    <NowPlaying/>
+    <div class="SongList">
+        <div class="SongListHeader">
+            <button class="leftButton" @onclick="Left">
+                <image class="buttonImg" src="images/left_icon.png" />
+            </button>
+            <div>
+                <h1>Song List</h1>
+                <span class="Title" id="page" style="font-size: 15px;">@GlobalData.currentpage</span>
+            </div>
+            <button class="rightButton" @onclick="Right">
+                <image class="buttonImg" src="images/right_icon.png" />
+            </button>
+        </div>
+        <div id="List">
+            @if (GlobalData.songLists.Count > 0)
+            {
+                @foreach (var level in GlobalData.songLists[GlobalData.currentpage].Levels)
+                {
+                    <button class="Container enabled@(level.Owned)" id="@level.LevelId" disabled="@(!@level.Owned)" style="position: relative; @Style(level.Owned)" @onclick="() => Select(level)">
+                        <img class="SongImage" src="data:image/jpg;base64,@PartyPanelUI.GlobalData.covers[level.LevelId]" />
+                        <div class="SongTextContainer">
+                            <div class="ListTitleContainer" align="left">
+                                <p class="ListTitle">@level.Name</p>
+                                @if (!level.Owned)
+                                {
+                                    <div class="OwnedContainer">
+                                        <img class="OwnedJustif" src="images/OwnedJustifIcon.png" />
+                                        <span class="tooltiptext">@level.OwnedJustificaton</span>
+                                    </div>
+                                }
+                            </div>
+                            <p class="AuthorMapper" align="left">
+                                @level.Author @if (!String.IsNullOrEmpty(@level.Mapper))
+                                {
+                                    <span style="font-size: 15pt;">[<span style="color: cadetblue">@level.Mapper</span>]</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="SongMetaContainer">
+                            <p class="SubMetadata" align="right">@level.Duration</p>
+                            <p class="SubMetadata" align="right">@level.BPM</p>
+                        </div>
+                    </button>
+                }
+            }
+            else
+            {
+                <p class="ListTitle" style="padding-top: 100px">Pending Song lists</p>
+            }
+        </div>
+    </div>
+        <div class="RightContainer" id="RightSide">
+            <DynamicComponent Type="@typeof(SongDetail)" />
+            <div class="SongDetail Modifiers">
+                <div class="ModifierGrid">
+                    @foreach (var modifier in GlobalData.Modifiers)
+                    {
+                        <button class="Modifier" id="@modifier.Name">
+                            <img class="icon" src="@modifier.Path" />
+                            <div class="texts">
+                                <p class="ModifierName">@modifier.Name</p>
+                                <p class="ModifierSub">@modifier.SubName</p>
+                            </div>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+</div>
+
+@code
+{
+    public string Style(bool owned) => owned ? "pointer-events:all" : "pointer-events:none"; 
+
+    protected override void OnInitialized()
+    {
+        GlobalData.RefreshList = async () => { await List(); };
+    }
+
+    async Task List()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+    void Select(PreviewBeatmapLevel level)
+    {
+        GlobalData.currentlevel = level;
+        StateHasChanged();
+        GlobalData.SelectLevel(level);
+    }
+
+    void Left()
+    {
+        if (GlobalData.currentpage != 0)
+            GlobalData.currentpage = GlobalData.currentpage - 1;
+        StateHasChanged();
+    }
+
+    void Right()
+    {
+        if (GlobalData.currentpage < GlobalData.songLists.Count - 1)
+            GlobalData.currentpage = GlobalData.currentpage + 1;
+        StateHasChanged();
+    }
+}

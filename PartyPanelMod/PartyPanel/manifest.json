@@ -1,0 +1,14 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/nike4613/ModSaber-MetadataFileSchema/master/Schema.json",
+  "author": "FutureMapper",
+  "description": "Spawns a panel on the pc view that a user can use to launch songs",
+  "gameVersion": "1.29.1",
+  "id": "PartyPanel",
+  "name": "PartyPanel",
+  "version": "0.1.0",
+  "dependsOn": {
+    "BSIPA": "^4.0.5",
+    "DataPuller": "^2.1.1",
+    "Protobuf-net": "^3.0.0"
+  }
+}

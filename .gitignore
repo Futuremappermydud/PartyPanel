@@ -1,4 +1,4 @@
-/PartyPanelMod/packages
+/PartyPanelMod/packages/**
 /PartyPanelUI/.vs/**
 /PartyPanelUI/bin/**
 /PartyPanelUI/obj/**

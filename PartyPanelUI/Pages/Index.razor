@@ -1,11 +1,30 @@
 ﻿@page "/"
 @using PartyPanelShared.Models;
+@using System.Globalization;
+@using System.Text;
+@using System.Drawing;
+@using System.Drawing.Imaging;
+@using SongDetailsCache.Structs;
+@using static PartyPanelUI.Pages.UIDropdown;
 
 <PageTitle>Party Panel</PageTitle>
 
 <div class="text-center">
-    <NowPlaying/>
-    <div class="SongList">
+    <DynamicComponent Type="@typeof(NowPlaying)" />
+    <div class="TopNavContainer">
+        <div class="SearchBarContainer">
+            <i class="fi fi-br-search"></i>
+            <input class="SearchBar" @oninput="OnChange" />
+        </div>
+        <div class="FilterAndSearchContainer @(filterMenuOpen ? "active" : "")">
+            <button class="ExpandButton" @onclick="ExpandFilters"><i class="fi fi-sr-filter"></i></button>
+            <div class="FilterContent">
+                <DynamicComponent Type="@typeof(UIDropdown)" Parameters="GenerateDropdownParameters(SelectDropdown, Index.sortModes.Keys.ToList(), dropdownTitles[0], 0)" />
+                <DynamicComponent Type="@typeof(UIDropdown)" Parameters="GenerateDropdownParameters(SelectDropdown, rankedModes, dropdownTitles[1], 1)" />
+            </div>
+        </div>
+    </div>
+    <div class="SongList @(browsingBeatSaver ? "BeatSaverSongList" : "")">
         <div class="SongListHeader">
             <button class="leftButton" @onclick="Left">
                 <image class="buttonImg" src="images/left_icon.png" />
@@ -19,16 +38,16 @@
             </button>
         </div>
         <div id="List">
-            @if (GlobalData.songLists.Count > 0)
+            @if (GlobalData.displaySongLists.Count -1 >= GlobalData.currentpage)
             {
-                @foreach (var level in GlobalData.songLists[GlobalData.currentpage].Levels)
+                @foreach (var level in GlobalData.displaySongLists[GlobalData.currentpage].Levels)
                 {
-                    <button class="Container enabled@(level.Owned)" id="@level.LevelId" disabled="@(!@level.Owned)" style="position: relative; @Style(level.Owned)" @onclick="() => Select(level)">
-                        <img class="SongImage" src="data:image/jpg;base64,@PartyPanelUI.GlobalData.covers[level.LevelId]" />
+                    <button class="Container enabled@(GlobalData.DynamicOwns(level))" id="@level.LevelId" disabled="@(!GlobalData.DynamicOwns(level))" style="position: relative; @(Style(GlobalData.DynamicOwns(level))) "@onclick="() => Select(level)">
+                        <img class="SongImage" src="@PartyPanelUI.GlobalData.covers[level.LevelId]" />
                         <div class="SongTextContainer">
                             <div class="ListTitleContainer" align="left">
                                 <p class="ListTitle">@level.Name</p>
-                                @if (!level.Owned)
+                                @if (!GlobalData.DynamicOwns(level))
                                 {
                                     <div class="OwnedContainer">
                                         <img class="OwnedJustif" src="images/OwnedJustifIcon.png" />
@@ -45,7 +64,7 @@
                         </div>
                         <div class="SongMetaContainer">
                             <p class="SubMetadata" align="right">@level.Duration</p>
-                            <p class="SubMetadata" align="right">@level.BPM</p>
+                            <p class="SubMetadata" align="right">@((int)level.BPM)</p>
                         </div>
                     </button>
                 }
@@ -56,35 +75,135 @@
             }
         </div>
     </div>
-        <div class="RightContainer" id="RightSide">
-            <DynamicComponent Type="@typeof(SongDetail)" />
-            <div class="SongDetail Modifiers">
-                <div class="ModifierGrid">
-                    @foreach (var modifier in GlobalData.Modifiers)
-                    {
-                        <button class="Modifier" id="@modifier.Name">
-                            <img class="icon" src="@modifier.Path" />
-                            <div class="texts">
-                                <p class="ModifierName">@modifier.Name</p>
-                                <p class="ModifierSub">@modifier.SubName</p>
-                            </div>
-                        </button>
-                    }
-                </div>
+    <DynamicComponent Type="@typeof(BeatSaverBrowser)" />
+    <div class="RightContainer" id="RightSide">
+        <DynamicComponent Type="@typeof(SongDetail)" />
+        <div class="SongDetail Modifiers">
+            <div class="ModifierGrid">
+                @foreach (var modifier in GlobalData.Modifiers)
+                {
+                    <button class="Modifier" id="@modifier.Name">
+                        <img class="icon" src="@modifier.Path" />
+                        <div class="texts">
+                            <p class="ModifierName">@modifier.Name</p>
+                            <p class="ModifierSub">@modifier.SubName</p>
+                        </div>
+                    </button>
+                }
             </div>
         </div>
+    </div>
+    <button class="BeatSaverBrowse" @onclick="BrowseBeatSaver">
+        <span class="Browse">Browse @(browsingBeatSaver ? "Songs" : "Beat Saver")</span>
+        <div class="Underline"/>
+    </button>
+    <div class="Clip"></div>
 </div>
 
 @code
 {
-    public string Style(bool owned) => owned ? "pointer-events:all" : "pointer-events:none"; 
+    private bool filterMenuOpen = false;
+    public static string Style(bool owned) => owned ? "pointer-events:all" : "pointer-events:none";
+    public static bool browsingBeatSaver = false;
 
+    public static string fixlevelid(string id) => id.StartsWith("custom_level_") ? new string(id.ToArray().Skip(13).ToArray()) : id;
+
+    public static readonly List<string> rankedModes = new List<string>
+        {
+            "Not Required",
+            "Required"
+        };
+
+    public static readonly List<string> dropdownTitles = new List<string>
+        {
+            "Sort Mode",
+            "Ranked"
+        };
+
+    public static readonly IReadOnlyDictionary<string, Func<PreviewBeatmapLevel, float>> sortModes = new Dictionary<string, Func<PreviewBeatmapLevel, float>>() {
+            { "Newest Upload", x => { BeatSaverBrowserManager.songDetails.songs.FindByHash(fixlevelid(x.LevelId), out var y); return y.uploadTimeUnix; } },
+            { "Oldest Upload", x => { BeatSaverBrowserManager.songDetails.songs.FindByHash(fixlevelid(x.LevelId), out var y); return uint.MaxValue - y.uploadTimeUnix; } },
+            { "Ranked/Qualified time", x => { BeatSaverBrowserManager.songDetails.songs.FindByHash(fixlevelid(x.LevelId), out var y); return (y.rankedStatus != RankedStatus.Unranked ? y.rankedChangeUnix : 0f); } },
+            { "Most Stars", x => { return GlobalData.AvgStars(x); } },
+            { "Least Stars", x => { return 420f - GlobalData.AvgStars(x); } },
+            { "Best rated", x => { return (float)GlobalData.Rating(x); } },
+            { "Worst rated", x => { return 420f - ((float)GlobalData.Rating(x) != 0 ? (float)GlobalData.Rating(x) : 420f); } }
+		};
+
+    private Dictionary<string, object> GenerateDropdownParameters(Action<SelectEventCallbackArgs> select, List<string> opts, string title = "", int id = 0)
+    {
+        return new Dictionary<string, object>()
+        {
+            { "SelectAction", EventCallback.Factory.Create<SelectEventCallbackArgs>(this, select)},
+            { "options", opts },
+            { "id", id},
+            { "Title", title}
+        };
+    }
+
+    public static string sortMode = "Newest Upload";
+    public static bool ranked = false;
+
+    private void SelectDropdown(SelectEventCallbackArgs args)
+    {
+        switch (args.id)
+        {
+            case 0:
+                sortMode = args.str;
+                break;
+            case 1:
+                ranked = args.str == "Required" ? true : false;
+                break;
+            default:
+                break;
+        }
+        OnChange(new ChangeEventArgs { Value = currentText });
+    }
     protected override void OnInitialized()
     {
         GlobalData.RefreshList = async () => { await List(); };
     }
 
-    async Task List()
+    void BrowseBeatSaver()
+    {
+        browsingBeatSaver = !browsingBeatSaver;
+        GlobalData.Browse();
+        OnChange(new ChangeEventArgs { Value = currentText });
+        StateHasChanged();
+    }
+
+    void ExpandFilters()
+    {
+        filterMenuOpen = !filterMenuOpen;
+        StateHasChanged();
+    }
+    string currentText;
+    void OnChange(ChangeEventArgs e)
+    {
+        if (!browsingBeatSaver)
+        {
+            string? text = e?.Value?.ToString();
+            currentText = text;
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                var search = WeightedSearch.Search(GlobalData.allSongs.Values.ToList(), text, Index.sortModes[sortMode]);
+                List<SongList> songLists = search.Chunk(20).Select(x => new SongList(x.ToArray())).ToList();
+                GlobalData.displaySongLists = songLists;
+            }
+            else
+            {
+                GlobalData.displaySongLists = GlobalData.songLists;
+            }
+            GlobalData.currentpage = 0;
+            StateHasChanged();
+        }
+        else
+        {
+            GlobalData.Search(e);
+        }
+    }
+
+    public async Task List()
     {
         await InvokeAsync(StateHasChanged);
     }

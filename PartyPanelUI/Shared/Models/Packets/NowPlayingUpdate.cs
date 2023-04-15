@@ -10,11 +10,12 @@ namespace PartyPanelShared.Models
         {
         }
 
-        public NowPlayingUpdate(int score, double accuracy, int elapsed)
+        public NowPlayingUpdate(int score, double accuracy, int elapsed, int totalTime)
         {
             this.score = score;
             this.accuracy = accuracy;
             this.elapsed = elapsed;
+            this.totalTime = totalTime;
         }
 
         [ProtoMember(1)]

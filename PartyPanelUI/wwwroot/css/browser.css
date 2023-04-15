@@ -1,0 +1,153 @@
+﻿.BeatSaverBrowse {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 220px;
+    height: 60px;
+    border: none;
+    background: none;
+    z-index: 1;
+}
+
+.BeatSaverBrowse::before {
+    content: '';
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    width: 220px;
+    height: 60px;
+    background-color: #555555;
+    transform-origin: 0 0;
+    transform: skew(-10deg);
+    border-radius: 10px;
+    z-index: -1;
+}
+
+.BeatSaverBrowse:hover::before {
+    background-color: #666666;
+}
+
+.Browse {
+    font-size: 28px;
+    font-family: 'Teko', sans-serif;
+    color: white;
+}
+
+.Underline {
+    position: fixed;
+    bottom: 20px;
+    left: 10px;
+    width: 220px;
+    height: 5px;
+    background-color: #EEEEEE;
+    border-radius: 0px 0px 10px 10px;
+}
+
+.BeatSaverSongList {
+    left: -360px;
+}
+
+.Clip {
+    display: block;
+    background-color: #333333;
+    width: 360px;
+    height: 100px;
+    position: fixed;
+    bottom: 0px;
+}
+
+.BeatSaverStats {
+    background-color: #333333;
+    width: 300px;
+    height: 200px;
+    border-radius: 10px;
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+}
+
+.BSSeperator {
+    width: 3px;
+    height: 180px;
+    margin: auto;
+    background-color: gray;
+}
+
+.RankedStats {
+    width: 150px;
+}
+
+.SongStats {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.RatingBar {
+    width: 100px;
+    height: 15px;
+    display: flex;
+    max-height: 146px;
+    overflow: hidden;
+    border-radius: 3px;
+    margin-bottom: -19px;
+    margin: 10px;
+}
+
+.goodRating {
+    background: #00bc8c;
+    flex: 53 1 0%;
+}
+
+.uncertainRating {
+    background: #444;
+    flex: 7.72301 1 0%;
+}
+
+.badRating {
+    background: #f39c12;
+    flex: 6 1 0%;
+}
+
+.FilterAndSearchContainer {
+    position: absolute;
+    top: 20px;
+    left: 320px;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    background-color: #4d4d4d;
+    border-radius: 10px;
+    transition: width ease-in-out 0.3s, height ease-in-out 0.3s, left ease-in-out 0.3s;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.FilterAndSearchContainer.active {
+    width: 400px;
+    height: 400px;
+    left: 355px;
+}
+
+.ExpandButton {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    position:absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 2;
+}
+
+.ExpandButton:hover {
+    background-color: #ddd
+}
+
+.FilterContent {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}

@@ -1,3 +1,47 @@
+@import "flaticon-uicons/css/all/all";
+
+.fi-rr-search {
+    color: black;
+    float: left;
+}
+
+.fi-br-download {
+    color: #aaaaaa;
+}
+
+.fi-ss-star {
+    color: #FFD284;
+}
+
+.SearchBarContainer {
+    background-color: white;
+    width: 250px;
+    height: 40px;
+    padding: 10px 10px 8px 10px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    position: absolute;
+    top: 20px;
+    left: 55px;
+}
+
+textarea:focus, input:focus {
+    outline: none;
+}
+
+.SearchBar {
+    margin-left: 15px;
+    font-family: 'teko';
+    text-align: left;
+    font-size: 20px;
+    border: none;
+    width: 100%;
+    padding-bottom: 2px;
+}
+
 body {
     background-color: #333333;
     max-width: 100%;
@@ -123,6 +167,7 @@ inert-style, title {
     transform: skew(-5deg);
     font-family: 'teko', sans-serif;
     font-size: 18px;
+    white-space: pre-line;
 }
 
 .SongTextContainer {
@@ -207,6 +252,10 @@ inert-style, title {
     align-items: center;
     padding-top: 20px;
     flex-direction: column;
+    position: absolute;
+    left: 0px;
+    top: 70px;
+    transition: left ease 0.3s;
 }
 
 .text-center {
@@ -279,7 +328,7 @@ inert-style, title {
 .PlayBackground {
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     width: 260px;
     height: 50px;
     background: linear-gradient(0deg, rgba(0,148,255,1) 0%, rgba(0,130,255,1) 100%);
@@ -474,7 +523,7 @@ h1 {
     backdrop-filter: blur(3px);
     position: fixed;
     width: 100%;
-    z-index: 1;
+    z-index: 2;
     height: 100%;
     opacity: 0%;
     transition: opacity 0.5s ease-in-out;
@@ -482,12 +531,12 @@ h1 {
     cursor: default;
 }
 
-    .overlay.TransitionOverlay {
-        opacity: 100%;
-        transition: opacity 0.5s ease-in-out;
-        pointer-events:all;
-        cursor: auto;
-    }
+.overlay.TransitionOverlay {
+    opacity: 100%;
+    transition: opacity 0.5s ease-in-out;
+    pointer-events:all;
+    cursor: auto;
+}
 
 @keyframes visible {
     from {
@@ -550,6 +599,13 @@ h1 {
     top: 84.2%;
     height: 10px;
     width: 10px;
+    background-color: cadetblue;
+    border-radius: 10px;
+}
+
+.TimeProgLine {
+    position: fixed;
+    height: 3px;
     background-color: cadetblue;
     border-radius: 10px;
 }

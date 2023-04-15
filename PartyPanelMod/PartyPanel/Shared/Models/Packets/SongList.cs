@@ -6,6 +6,10 @@ namespace PartyPanelShared.Models
     [ProtoContract]
     public class SongList
     {
+        public SongList()
+        {
+        }
+
         public SongList(PreviewBeatmapLevel[] levels)
         {
             Levels = levels;

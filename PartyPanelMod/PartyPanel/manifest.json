@@ -5,10 +5,10 @@
   "gameVersion": "1.29.1",
   "id": "PartyPanel",
   "name": "PartyPanel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependsOn": {
     "BSIPA": "^4.0.5",
     "DataPuller": "^2.1.1",
-    "Protobuf-net": "^3.0.0"
+    "protobuf-net": "^3.0.102"
   }
 }

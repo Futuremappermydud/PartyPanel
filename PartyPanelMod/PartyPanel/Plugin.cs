@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using HarmonyLib;
 using PartyPanel.HarmonyPatches;
 using System.Reflection;
+using BeatSaverSharp;
+using System;
 
 namespace PartyPanel
 {
@@ -16,7 +18,7 @@ namespace PartyPanel
     public class Plugin
     {
         public string Name => "PartyPanel";
-        public string Version => "0.0.1";
+        public string Version => "0.1.1";
 
         private BeatmapLevelsModel beatmapLevelsModel;
 
@@ -24,9 +26,11 @@ namespace PartyPanel
         public static TaskCompletionSource<bool> IsSongsLoading = new TaskCompletionSource<bool>();
         public static IPA.Logging.Logger logger;
 
-        private static Harmony harmony;
+        internal static Harmony harmony;
 
         public static Client client;
+
+        public static BeatSaver Client { get; } = new BeatSaver(new BeatSaverOptions("PartyPanel", new Version(0, 1, 1)));
 
         [Init]
         public void Init(IPA.Logging.Logger _logger)
@@ -52,6 +56,12 @@ namespace PartyPanel
 
                 IsSongsLoading.SetResult(true);
             };
+        }
+
+        [OnDisable] public void OnDisable()
+        {
+            harmony.UnpatchSelf();
+
         }
     }
 }

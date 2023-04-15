@@ -15,8 +15,9 @@ namespace PartyPanelShared
         NowPlaying,
         NowPlayingUpdate,
         PlaySong,
-        ServerMetadata,
-        PreviewSong
+        PreviewSong,
+        DownloadSong,
+        AllSongs
     }
 
     public class Packet
@@ -64,7 +65,13 @@ namespace PartyPanelShared
                 case PacketType.PlaySong:
                     Serializer.Serialize(memory, SpecificPacket as PlaySong);
                     break;
-            }
+                case PacketType.DownloadSong:
+                    Serializer.Serialize(memory, SpecificPacket as DownloadSong);
+                    break;
+				case PacketType.AllSongs:
+					Serializer.Serialize(memory, SpecificPacket as AllSongs);
+					break;
+			}
 
             var magicFlag = Encoding.UTF8.GetBytes("moon");
             var typeBytes = BitConverter.GetBytes((int)Type);
@@ -76,7 +83,8 @@ namespace PartyPanelShared
         public string ToBase64() => Convert.ToBase64String(ToBytes());
 
         public static Packet FromBytes(byte[] bytes) => FromStream(new MemoryStream(bytes));
-
+        //TODO: Implement a Packet consumer
+        //to make sure packets do not get mixed up when packets are deserialized too fast (Invalid field in source data: 0)
         public static Packet FromStream(MemoryStream stream)
         {
             var typeBytes = new byte[sizeof(int)];
@@ -135,7 +143,20 @@ namespace PartyPanelShared
                         specificPacket = Serializer.Deserialize<PlaySong>(ms);
                     }
                     break;
-            }
+                case PacketType.DownloadSong:
+                    using (MemoryStream ms = new MemoryStream(msg, packetHeaderSize, msg.Length - packetHeaderSize))
+                    {
+                        specificPacket = Serializer.Deserialize<DownloadSong>(ms);
+                    }
+                    break;
+				case PacketType.AllSongs:
+					using (MemoryStream ms = new MemoryStream(msg, packetHeaderSize, msg.Length - packetHeaderSize))
+					{
+                        var x = Serializer.Deserialize<AllSongs>(ms);
+                        specificPacket = x;
+					}
+					break;
+			}
 
             return new Packet(specificPacket)
             {

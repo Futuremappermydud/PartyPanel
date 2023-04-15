@@ -1,6 +1,7 @@
 ﻿using PartyPanelShared;
 using PartyPanelShared.Models;
 using PartyPanelUI.Network;
+using SongDetailsCache.Structs;
 using System.Drawing;
 using System.Drawing.Imaging;
 using Image = System.Drawing.Image;
@@ -12,6 +13,7 @@ namespace PartyPanelUI
         public static Action<NowPlayingUpdate> OnUpdate;
         public static Action<NowPlaying> OnNowPlaying;
         public Network.Server server;
+		public static bool isConnected = false;
 
         public Server()
         {
@@ -25,21 +27,20 @@ namespace PartyPanelUI
             server.PlayerConnected += Server_PlayerConnected;
             server.PlayerDisconnected += Server_PlayerDisconnected;
             server.Start();
-            ServerMetadata metadata = new ServerMetadata();
-            //metadata.runLowCostMode = Program.runLowCostMode;
-            server.Send(new Packet(metadata).ToBytes());
         }
 
         private void Server_PlayerDisconnected(NetworkPlayer obj)
         {
             Logger.Debug("Player Disconnected!");
-            //panel.DisableSongList();
-        }
+			//panel.DisableSongList();
+			isConnected = false;
+		}
 
         private void Server_PlayerConnected(NetworkPlayer obj)
         {
             Logger.Debug("Player Connected!");
-        }
+			isConnected = true;
+		}
 #pragma warning disable CA1416 // Validate platform compatibility
         public static Image FixedSize(Image image, int height)
         {
@@ -67,14 +68,13 @@ namespace PartyPanelUI
         {
             if (packet.Type == PacketType.PreviewSong)
             {
-                Logger.Debug("SongPreview");
                 PreviewSong? song = packet.SpecificPacket as PreviewSong;
                 //Add preprocessing logic here i.e converting cover images
                 if (song?.level != null)
                 {
                     if (!String.IsNullOrEmpty(song.level?.coverPath))
                     {
-                        if (song.level.cover == null)
+                        if (!(song.level.cover.Length > 1))
                         {
                             var image = Image.FromFile(song.level.coverPath);
                             var bitmap = FixedSize(image, 128);
@@ -85,7 +85,7 @@ namespace PartyPanelUI
                     {
                         if (song.level?.cover != null)
                         {
-                            GlobalData.covers.Add(song.level.LevelId, Convert.ToBase64String(song.level.cover));
+                            GlobalData.covers.Add(song.level.LevelId, "data:image/jpg;base64," + Convert.ToBase64String(song.level.cover));
                         }
                         else
                         {
@@ -102,7 +102,7 @@ namespace PartyPanelUI
                 {
                     if (!string.IsNullOrEmpty(song?.coverPath))
                     {
-                        if (song.cover == null)
+                        if (!(song.cover.Length > 1))
                         {
                             var image = Image.FromFile(song.coverPath);
                             var bitmap = FixedSize(image, 128);
@@ -113,7 +113,7 @@ namespace PartyPanelUI
                     {
                         if (song?.cover != null)
                         {
-                            GlobalData.covers.Add(song.LevelId, Convert.ToBase64String(song.cover));
+                            GlobalData.covers.Add(song.LevelId, "data:image/jpg;base64," + Convert.ToBase64String(song.cover));
                         }
                         else
                         {
@@ -122,13 +122,26 @@ namespace PartyPanelUI
                     }
                 }
                 GlobalData.songLists.Add(songList);
-                if(GlobalData.songLists.IndexOf(songList) == 0)
-                {
-                    GlobalData.RefreshList();
-                }
                 foreach(var song in songList.Levels)
                 {
-                    GlobalData.allSongs.Add(song.LevelId, song);
+                    if (BeatSaverBrowserManager.convertedBeatSaverLevels.Any((x) => "custom_level_" + x.LevelId == song.LevelId))
+                    {
+                        var x = BeatSaverBrowserManager.convertedBeatSaverLevels.Find((x) => "custom_level_" + x.LevelId == song.LevelId);
+						GlobalData.covers.TryAdd("custom_level_" + x.LevelId, GlobalData.covers[x.LevelId]);
+						GlobalData.covers.Remove(x.LevelId); //Cover Migration
+
+						x.LevelId = "custom_level_" + x.LevelId;
+                        x.chars = song.chars ;
+                        GlobalData.allSongs.Add(x.LevelId, x);
+                    }
+                    else
+                    {
+                        GlobalData.allSongs.Add(song.LevelId, song);
+                    }
+                }
+                if (GlobalData.songLists.IndexOf(songList) == 0)
+                {
+                    GlobalData.RefreshList();
                 }
             }
             if(packet.Type == PacketType.NowPlaying)
@@ -140,6 +153,16 @@ namespace PartyPanelUI
             {
                 NowPlayingUpdate nowPlayingUpdate = packet.SpecificPacket as NowPlayingUpdate;
                 OnUpdate.Invoke(nowPlayingUpdate);
+            }
+            if(packet.Type == PacketType.AllSongs)
+            {
+                var x = (packet.SpecificPacket as AllSongs);
+                Logger.Info(x.Lists.Count.ToString());
+                foreach (var list in x.Lists)
+                {
+                    Logger.Info("Bruh");
+                    Server_PacketRecieved(null, new Packet(list));
+                }
             }
         }
     }

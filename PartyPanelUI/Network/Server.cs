@@ -122,16 +122,15 @@ namespace PartyPanelUI.Network
                             player.accumulatedBytes.RemoveAt(0);
                             accumulatedBytes = player.accumulatedBytes.ToArray();
                         }
-
                         if (Packet.PotentiallyValidPacket(accumulatedBytes))
                         {
                             try
                             {
                                 PartyPanelUI.Server.Server_PacketRecieved(player, Packet.FromBytes(accumulatedBytes));
                             }
-                            catch
+                            catch (Exception e)
                             {
-
+                                //Logger.Debug(e.ToString());
                             }
                             player.accumulatedBytes.Clear();
                         }

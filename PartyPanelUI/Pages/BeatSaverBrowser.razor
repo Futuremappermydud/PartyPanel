@@ -1,0 +1,126 @@
+﻿@using PartyPanelShared.Models;
+@using System.Drawing;
+@using System.Drawing.Imaging;
+
+<div class="SongList @(Index.browsingBeatSaver ? "" : "BeatSaverSongList")">
+    <div class="SongListHeader">
+        <button class="leftButton" @onclick="Left">
+            <image class="buttonImg" src="images/left_icon.png" />
+        </button>
+        <div>
+            <h1>Beat Saver</h1>
+            <span class="Title" id="page" style="font-size: 15px;">@GlobalData.currentpage</span>
+        </div>
+        <button class="rightButton" @onclick="Right">
+            <image class="buttonImg" src="images/right_icon.png" />
+        </button>
+    </div>
+    <div id="List">
+        @if (searchLists.Count - 1 >= GlobalData.currentpage)
+        {
+            @foreach (var level in searchLists[GlobalData.currentpage].Levels)
+            {
+                <button class="Container enabledTrue" id="@level.LevelId" style="position: relative;" @onclick="() => Select(level)">
+                    <img class="SongImage" src="@PartyPanelUI.GlobalData.covers[level.LevelId]" />
+                    <div class="SongTextContainer">
+                        <div class="ListTitleContainer" align="left">
+                            <p class="ListTitle">@level.Name</p>
+                            @if (!GlobalData.DynamicOwns(level))
+                            {
+                                <div class="OwnedContainer">
+                                    <i class="fi fi-br-download"></i>
+                                    <span class="tooltiptext">@level.OwnedJustificaton</span>
+                                </div>
+                            }
+                            @if (isRanked(level))
+                            {
+                                <div class="OwnedContainer">
+                                    <i class="fi fi-ss-star"></i>
+                                    <span class="tooltiptext">Ranked<br/>Avg Stars: @(GlobalData.AvgStars(level).ToString("0.##"))</span>
+                                </div>
+                            }
+                        </div>
+                        <p class="AuthorMapper" align="left">
+                            @level.Author @if (!String.IsNullOrEmpty(@level.Mapper))
+                            {
+                                <span style="font-size: 15pt;">[<span style="color: cadetblue">@level.Mapper</span>]</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="SongMetaContainer">
+                        <p class="SubMetadata" align="right">@level.Duration</p>
+                        <p class="SubMetadata" align="right">@((int)level.BPM)</p>
+                    </div>
+                </button>
+            }
+        }
+        else
+        {
+            <p class="ListTitle" style="padding-top: 100px">Pending Search</p>
+        }
+    </div>
+</div>
+
+@code {
+    public List<SongList> searchLists = new();
+    private bool isReady() => BeatSaverBrowserManager.convertedBeatSaverLevels != null;
+    private bool isRanked(PreviewBeatmapLevel level)
+    {
+        BeatSaverBrowserManager.songDetails.songs.FindByHash(Index.fixlevelid(level.LevelId), out var x);
+        return x.difficulties.Any(x => x.ranked);
+    }
+    protected override void OnInitialized()
+    {
+        GlobalData.Browse = () => { Update(); };
+        GlobalData.Search = (x) => { OnChange(x); };
+        GlobalData.RefreshList = async () => { await List(); };
+    }
+
+    public async Task List()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void Update()
+    {
+        StateHasChanged();
+    }
+
+    void OnChange(ChangeEventArgs e)
+    {
+        string? text = e?.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(text) && isReady())
+        {
+            var search = WeightedSearch.Search(BeatSaverBrowserManager.convertedBeatSaverLevels, text, Index.sortModes[Index.sortMode]);
+            List<SongList> songLists = search.Chunk(20).Select(x => new SongList(x.ToArray())).ToList();
+            searchLists = songLists;
+        }
+        else
+        {
+            searchLists = new List<SongList>();
+        }
+        GlobalData.currentpage = 0;
+        StateHasChanged();
+    }
+
+    void Select(PreviewBeatmapLevel level)
+    {
+        GlobalData.currentlevel = level;
+        StateHasChanged();
+        GlobalData.SelectLevel(level);
+    }
+
+    void Left()
+    {
+        if (GlobalData.currentpage != 0)
+            GlobalData.currentpage = GlobalData.currentpage - 1;
+        StateHasChanged();
+    }
+
+    void Right()
+    {
+        if (GlobalData.currentpage < searchLists.Count - 1)
+            GlobalData.currentpage = GlobalData.currentpage + 1;
+        StateHasChanged();
+    }
+}

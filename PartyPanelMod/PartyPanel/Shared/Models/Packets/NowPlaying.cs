@@ -6,6 +6,10 @@ namespace PartyPanelShared.Models
     [ProtoContract]
     public class NowPlaying
     {
+        public NowPlaying()
+        {
+        }
+
         public NowPlaying(string levelID, bool isFinished)
         {
             this.levelID = levelID;

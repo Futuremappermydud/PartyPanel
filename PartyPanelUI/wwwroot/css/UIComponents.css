@@ -1,0 +1,91 @@
+﻿.DropdownContainer {
+    width: 200px;
+    height: 35px;
+    background-color: dimgrey;
+    border: none;
+    border-radius: 10px;
+    transition: border-radius linear 0.1s;
+    margin: auto;
+    pointer-events: none;
+}
+
+.DropdownTitle {
+    margin: 5px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: pre-wrap;
+    overflow: hidden;
+    width: 150px;
+}
+
+.DropdownContainer:hover:not(:has(.DropdownContent:hover)) {
+    background-color: #444;
+    pointer-events: none;
+}
+
+.DropdownContainer:has(.DropdownContent.open) {
+    border-radius: 10px 10px 0px 0px;
+}
+
+.fi-rr-angle-small-down, .fi-rr-angle-small-up {
+    color: white;
+    margin-left: 10px;
+}
+
+.DropdownContent {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    top: -10px;
+    margin: 0px 20px 20px 0px;
+    border-radius: 0px 0px 10px 10px;
+    padding-top: 10px;
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.26s ease;
+    z-index: -1;
+    background-color: dimgrey;
+    width: 200px;
+    left: -6px;
+}
+
+.DropdownContent.open {
+    transform: scaleY(1);
+}
+
+.DropdownOption {
+    background-color: dimgrey;
+    width: 200px;
+    font-size: 18px;
+    border: none;
+    font-family: 'Teko', sans-serif;
+    color: lightgray;
+    pointer-events: auto;
+}
+
+.DropdownOption:hover {
+    background-color: #444; 
+}
+
+.DropdownInfo {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    height: 100%;
+}
+
+.DropdownInfo:hover {
+    pointer-events: auto;
+}
+
+.ZWrapper { 
+    z-index: 0;
+    height: 35px;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: revert;
+    width: 300px;
+}

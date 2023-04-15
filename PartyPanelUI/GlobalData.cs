@@ -4,10 +4,12 @@ using PartyPanelShared;
 using PartyPanelShared.Models;
 using PartyPanelUI.Pages;
 using ProtoBuf;
+using SongDetailsCache.Structs;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Numerics;
+using System.Reflection.Emit;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -39,22 +41,85 @@ namespace PartyPanelUI
     {
         public static Dictionary<string, string> covers = new Dictionary<string, string>();
         public static Dictionary<string, string> characteristics = new Dictionary<string, string>();
+        public static List<SongList> displaySongLists = new List<SongList>();
         public static List<SongList> songLists = new List<SongList>();
         public static Dictionary<string, PreviewBeatmapLevel> allSongs = new Dictionary<string, PreviewBeatmapLevel>(); //Used for Indexing and searching
         public static List<ModifierModel> Modifiers = new List<ModifierModel>();
-        public static Network.Server server;
+        public static Network.Server? server;
 
-        public static PreviewBeatmapLevel currentInGame;
+        public static PreviewBeatmapLevel? currentInGame;
 
-        public static PreviewBeatmapLevel currentlevel;
+        public static PreviewBeatmapLevel? currentlevel;
         public static GameplayModifiers currentmods = new GameplayModifiers();
         public static int currentpage = 0;
-        private static Characteristic _currentchar;
-        private static string _currentdiff;
+        private static Characteristic? _currentchar;
+        private static string _currentdiff = "";
 
-        public static Action<PreviewBeatmapLevel> SelectLevel;
-        public static Action RefreshList;
+        public static Action<PreviewBeatmapLevel>? SelectLevel;
+        public static Action? RefreshList;
+        public static Action<ChangeEventArgs>? Search;
+        public static Action? Browse;
+        public static Action? BeatSaverLoaded;
 
+        public static Song GetSong(PreviewBeatmapLevel? level)
+        {
+            string id = level != null ? level.LevelId : currentlevel.LevelId;
+            if(id.StartsWith("custom_level_"))
+            {
+                id = id.Substring(13);
+            }
+
+			BeatSaverBrowserManager.songDetails.songs.FindByHash(id, out var x);
+            return x;
+        }
+
+        public static bool Ranked(PreviewBeatmapLevel? level) => GetSong(level).rankedStatus == RankedStatus.Ranked;
+        public static float AvgStars(PreviewBeatmapLevel? level) => GetSong(level).difficulties.Where(x => x.ranked == true).Average(x => x.stars);
+        public static double Uncertainty(PreviewBeatmapLevel? level)
+        {
+            var x = GetSong(level);
+            var totalVotes = (double)(x.upvotes + x.downvotes);
+
+            var uncertainty = Math.Pow(2.0f, -Math.Log(totalVotes / 2 + 1, 3.0));
+
+            var weightedRange = 25.0f;
+
+            var weighting = 2;
+
+            if ((totalVotes + weighting) < weightedRange)
+            {
+                uncertainty += (1 - uncertainty) * (1 - (totalVotes + weighting) * (1 / weightedRange));
+            }
+
+            return totalVotes < 1 ? 1 : (uncertainty * totalVotes / (1 - uncertainty));
+		}
+
+        //Takes into account Uncertainty
+        public static double Rating(PreviewBeatmapLevel? level)
+        {
+            var x = GetSong(level);
+            double u = Uncertainty(level);
+            double total = x.upvotes + x.downvotes + u;
+            return x.upvotes / total;
+        }
+
+        public static bool DynamicOwns(PreviewBeatmapLevel level)
+        {
+            return DynamicOwns(level.LevelId);
+        }
+        public static bool DynamicOwns(string LevelId)
+        {
+            //In case of ost this if statement is needed
+            if (!allSongs.ContainsKey(LevelId))
+            {
+                return allSongs.ContainsKey(LevelId.StartsWith("custom_level_") ? LevelId : "custom_level_" + LevelId);
+            }
+            else
+            {
+                //ost or dlc
+                return true;
+            }
+        }
         public static Characteristic currentchar
         {
             get
@@ -85,7 +150,6 @@ namespace PartyPanelUI
         {
             server = new Network.Server(10155);
             server.Start();
-            Logger.Info("Test");
 
             characteristics.Add("Standard", "standard.png");
             characteristics.Add("OneSaber", "onesaber.png");
@@ -105,7 +169,7 @@ namespace PartyPanelUI
             level.Author = "Charli XcX";
             level.Mapper = "RedNewth";
             level.Owned = true;
-            level.chars = new Characteristic[2] { new Characteristic("Standard", new string[2] {"sheesh", "bruh" }), new Characteristic("NoArrows", new string[2] { "Guru", "Stacky" }) };
+            level.chars = new Characteristic[2] { new Characteristic("Standard", new string[2] {"Example 1", "Example 2" }), new Characteristic("NoArrows", new string[2] { "Example 3", "Example 4" }) };
             level.coverPath = "D:\\SteamLibrary\\steamapps\\common\\Beat Saber\\Beat Saber_Data\\CustomLevels\\25f3f (Red Balloon - RedNewth)\\ballon.png";
             var image = Image.FromFile(level.coverPath);
             var bitmap = Server.FixedSize(image, 128);
@@ -123,7 +187,7 @@ namespace PartyPanelUI
             level.Author = "Camellia";
             level.Mapper = "DE125 & Skeelie";
             level.Owned = true;
-            level.chars = new Characteristic[1] { new Characteristic("OneSaber", new string[2] { "balls", "queef" }) };
+            level.chars = new Characteristic[1] { new Characteristic("OneSaber", new string[2] { "Example 5", "Example 6" }) };
             level.coverPath = "D:\\SteamLibrary\\steamapps\\common\\Beat Saber\\Beat Saber_Data\\CustomLevels\\7457 (Night Raid with a Dragon - DE125 & Skeelie)\\cover.jpg";
             image = Image.FromFile(level.coverPath);
             bitmap = Server.FixedSize(image, 128);
@@ -134,6 +198,8 @@ namespace PartyPanelUI
             allSongs.Add(level.LevelId, level);
 
             songLists.Add(s);*/
+
+            displaySongLists = songLists;
 
             Modifiers.Add(new ModifierModel("images/Modifiers/NoFail.png", "No Fail", "+0% / -50%", true));
             Modifiers.Add(new ModifierModel("images/Modifiers/OneLife.png", "1 Life", ""));

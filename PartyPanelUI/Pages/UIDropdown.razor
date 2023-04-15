@@ -1,0 +1,84 @@
+﻿<div class="ZWrapper" style="@(GetZIndex())">
+	<p class="DropdownTitle">@Title</p>
+	<button class="DropdownContainer" @onclick="Expand">
+		<div class="DropdownInfo">
+			<p class="DropdownTitle">@(options[selected])</p>
+			<i class="fi @(expanded == id ? "fi-rr-angle-small-down" : "fi-rr-angle-small-up")"></i>
+		</div>
+		<div class="DropdownContent @((expanded == id) ? "open" : "")">
+			@foreach(string x in options)
+			{
+				<button class="DropdownOption" @onclick="()=>Select(x)" style="@DrpdwnOptionStyle(x)">@x</button>
+			}
+		</div>
+	</button>
+</div>
+
+@code {
+
+	public class SelectEventCallbackArgs
+	{
+		public string str { get; set; } = "";
+		public int id { get; set; } = 0;
+	}
+	[Parameter]
+	public EventCallback<SelectEventCallbackArgs>? SelectAction { get; set; }
+	[Parameter]
+	public List<string> options { get; set; } = new(0);
+	[Parameter]
+	public int id { get; set; } = 0;
+	[Parameter]
+	public string Title { get; set; } = "";
+
+	public int selected { get; set; } = 0;
+	[Parameter]
+	public static int expanded { get; set; } = -1;
+
+	public static Action Expanded;
+
+	protected override void OnInitialized()
+	{
+		Expanded += () => { Refresh(); };
+	}
+
+	private void Refresh()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+	private string DrpdwnOptionStyle(string x)
+	{
+		if(options.ToList().IndexOf(x) == options.Count - 1)
+		{
+			return "border-radius: 0px 0px 10px 10px;";
+		}
+		return "";
+	}
+
+	private string GetZIndex()
+	{
+		if(expanded == id)
+		{
+			return "z-index: 1";
+		}
+		else
+		{
+			return "z-index: 0";
+		}
+	}
+
+	public void Select(string str)
+	{
+		selected = options.ToList().IndexOf(str);
+		StateHasChanged();
+		if(SelectAction.HasValue)
+		{
+			SelectAction.Value.InvokeAsync(new SelectEventCallbackArgs { str = str, id = id });
+		}
+	}
+
+	public void Expand()
+	{
+		expanded = expanded != id ? id : -1;
+		Expanded();
+	}
+}

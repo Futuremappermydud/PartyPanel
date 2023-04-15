@@ -120,13 +120,12 @@ namespace PartyPanel
                     continue;
                 }
             }
-
-            for (int i = 0; i < songLists.Count; i++)
+            Logger.Info(subpacketListArr.Length.ToString());
+            Logger.Info(songLists.Count.ToString());
+            await Task.Run(() =>
             {
-                await Task.Run(()=>{ client.Send(new Packet(songLists[i]).ToBytes()); });
-                await Task.Delay(900);
-                Logger.Info(i.ToString() + "/" + songLists.Count + " SongLists sent");
-            }
+                client.Send(new Packet(new AllSongs(songLists)).ToBytes());
+            });
         }
         private static Texture2D GetFromUnreadable(Texture2D tex, Rect rect)
         {
@@ -292,7 +291,6 @@ namespace PartyPanel
             }
             return level;
         }
-        public static ServerMetadata metadata = new ServerMetadata();
         private void Client_PacketRecieved(Packet packet)
         {
             if (packet.Type == PacketType.PlaySong)
@@ -304,7 +302,6 @@ namespace PartyPanel
                 BeatmapDifficulty desiredDifficulty;
                 playSong.difficulty.BeatmapDifficultyFromSerializedName(out desiredDifficulty);
 
-
                 SaberUtilities.PlaySong(desiredLevel, desiredCharacteristic, desiredDifficulty, playSong);
             }
             else if (packet.Type == PacketType.Command)
@@ -314,10 +311,12 @@ namespace PartyPanel
                 {
                     SaberUtilities.ReturnToMenu();
                 }
-            }
-            else if (packet.Type == PacketType.ServerMetadata)
+            } 
+            else if (packet.Type == PacketType.DownloadSong)
             {
-                metadata = packet.SpecificPacket as ServerMetadata;
+                DownloadSong download = packet.SpecificPacket as DownloadSong;
+
+                Task.Run(async () => { await BeatSaverDownloader.Misc.SongDownloader.Instance.DownloadSong(Plugin.Client.Beatmap(download.songKey).Result, CancellationToken.None); SongCore.Loader.Instance.RefreshSongs(); });
             }
         }
     }

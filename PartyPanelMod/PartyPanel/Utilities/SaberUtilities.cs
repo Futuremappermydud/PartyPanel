@@ -1,4 +1,5 @@
-﻿using PartyPanel.Utilities;
+﻿using HMUI;
+using PartyPanel.Utilities;
 using PartyPanelShared;
 using PartyPanelShared.Models;
 using SongCore;
@@ -16,9 +17,9 @@ namespace PartyPanel
 {
     class SaberUtilities    
     {
-        private static CancellationTokenSource getLevelCancellationTokenSource;
-        private static CancellationTokenSource getStatusCancellationTokenSource;
-        private static SoloFreePlayFlowCoordinator flow;
+        private static CancellationTokenSource? getLevelCancellationTokenSource;
+        private static CancellationTokenSource? getStatusCancellationTokenSource;
+        private static SoloFreePlayFlowCoordinator? flow;
         public static PracticeSettings ConvertPractice(PartyPanelShared.Models.PracticeSettings practiceSettings)
         {
             Logger.Debug(practiceSettings.songSpeed.ToString());
@@ -63,7 +64,7 @@ namespace PartyPanel
             };
             if (flow == null || flow.gameObject == null || !flow.gameObject.activeInHierarchy)
             {
-                Button button = Resources.FindObjectsOfTypeAll<Button>().Where(x => x != null && x.name == "SoloButton").First();
+                Button button = Resources.FindObjectsOfTypeAll<NoTransitionsButton>().Where(x => x != null && x.name == "SoloButton").First();
                 button.onClick.Invoke();
             }
             if ((level is PreviewBeatmapLevelSO /* && await HasDLCLevel(level.levelID)*/) || level is CustomPreviewBeatmapLevel)
@@ -72,6 +73,7 @@ namespace PartyPanel
                 var result = await GetLevelFromPreview(level);
                 if ( !(result?.isError == true))
                 {
+                    Logger.Debug("level loaded" + result.HasValue.ToString());
                     SongLoaded(result?.beatmapLevel);
                     return;
                 }

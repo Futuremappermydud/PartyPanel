@@ -7,15 +7,6 @@ namespace PartyPanelShared.Models
     public class PreviewSong
     {
         [ProtoMember(1)]
-        public PreviewBeatmapLevel level { get; set; }
-
-        public PreviewSong()
-        {
-        }
-
-        public PreviewSong(PreviewBeatmapLevel level)
-        {
-            this.level = level;
-        }
+        public PreviewBeatmapLevel level;
     }
 }

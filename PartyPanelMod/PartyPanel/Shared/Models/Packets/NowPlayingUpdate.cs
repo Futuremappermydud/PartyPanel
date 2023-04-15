@@ -6,6 +6,10 @@ namespace PartyPanelShared.Models
     [ProtoContract]
     public class NowPlayingUpdate
     {
+        public NowPlayingUpdate()
+        {
+        }
+
         public NowPlayingUpdate(int score, double accuracy, int elapsed, int totalTime)
         {
             this.score = score;

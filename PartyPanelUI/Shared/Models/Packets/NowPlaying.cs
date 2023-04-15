@@ -18,7 +18,6 @@ namespace PartyPanelShared.Models
 
         [ProtoMember(1)]
         public string levelID { get; set; }
-
         [ProtoMember(2)]
         public bool isFinished { get; set; } = false;
     }

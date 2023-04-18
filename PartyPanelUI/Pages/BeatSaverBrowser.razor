@@ -66,7 +66,7 @@
     private bool isReady() => BeatSaverBrowserManager.convertedBeatSaverLevels != null;
     private bool isRanked(PreviewBeatmapLevel level)
     {
-        BeatSaverBrowserManager.songDetails.songs.FindByHash(Index.fixlevelid(level.LevelId), out var x);
+        BeatSaverBrowserManager.songDetails.songs.FindByHash(Index.FixLevelId(level.LevelId), out var x);
         return x.difficulties.Any(x => x.ranked);
     }
     protected override void OnInitialized()
@@ -92,8 +92,7 @@
         if (!string.IsNullOrWhiteSpace(text) && isReady())
         {
             var search = WeightedSearch.Search(BeatSaverBrowserManager.convertedBeatSaverLevels, text, Index.sortModes[Index.sortMode]);
-            List<SongList> songLists = search.Chunk(20).Select(x => new SongList(x.ToArray())).ToList();
-            searchLists = songLists;
+            searchLists = Server.RecreateSongLists(search.ToArray());
         }
         else
         {

@@ -166,7 +166,7 @@ namespace PartyPanel
             });
             return test;
         }
-        public async Task<PreviewBeatmapLevel> ConvertToPacketType(IPreviewBeatmapLevel x, PlayerData playerData)   
+        public static async Task<PreviewBeatmapLevel> ConvertToPacketType(IPreviewBeatmapLevel x, PlayerData playerData)   
         {
             //Make packet level
             var level = new PreviewBeatmapLevel();

@@ -89,6 +89,7 @@ inert-style, title {
 .ListTitleContainer {
     display: flex;
     flex-direction: row;
+    max-width: 195px;
 }
 .DetailContainer {
     max-width: 250px;

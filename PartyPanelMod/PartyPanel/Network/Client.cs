@@ -76,6 +76,7 @@ namespace PartyPanel.Network
 
                 // Begin receiving the data from the remote device.  
                 client.BeginReceive(player.buffer, 0, ClientPlayer.BufferSize, 0, new AsyncCallback(ReadCallback), player);
+                Logger.Info("Connected");
             }
             catch (Exception e)
             {

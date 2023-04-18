@@ -90,7 +90,7 @@
 		</div>
 		<div class="PlayBackground">
 			<button class="PlayButton" @onclick="Play">
-					<p style="transform: skew(5deg); margin: 0px;">@(Index.browsingBeatSaver && !GlobalData.DynamicOwns(GlobalData.currentlevel) ? "Download" : "Play")</p>
+					<p style="transform: skew(5deg); margin: 0px;">@GetActionButtonText()</p>
 			</button>
 		</div>
 	</div>
@@ -156,6 +156,8 @@
 		new List<string>{"4 Lives", "1 Life"},
 	};
 
+	public static List<string> currentlyLoadingSongs = new List<string>();
+
 	public bool isOpen = false;
 
 	protected override void OnInitialized()
@@ -166,6 +168,22 @@
 	async Task Select(PreviewBeatmapLevel level)
 	{
 		await InvokeAsync(StateHasChanged);
+	}
+
+	string GetActionButtonText()
+	{
+		if(currentlyLoadingSongs.Contains(GlobalData.currentlevel.LevelId))
+		{
+			return "Loading...";
+		}
+		if(Index.browsingBeatSaver && !GlobalData.DynamicOwns(GlobalData.currentlevel))
+		{
+			return "Download";
+		}
+		else
+		{
+			return "Play";
+		}
 	}
 
 	void OpenOptions()
@@ -179,7 +197,8 @@
 
 	void Play()
 	{
-		if (!Server.isConnected) return;
+		//TODO: Download Queue before connected
+		if (!(Network.Server.isConnected)) return;
 		if (!Index.browsingBeatSaver || GlobalData.DynamicOwns(GlobalData.currentlevel))
 		{
 			var play = new PlaySong();
@@ -194,33 +213,9 @@
 		}
 		else
 		{
-			if (!Server.isConnected) return;
 			GlobalData.server.Send(new Packet(new DownloadSong(GlobalData.currentlevel.LevelId, GlobalData.GetSong(null).key)).ToBytes());
 
-			GlobalData.covers.TryAdd("custom_level_" + GlobalData.currentlevel.LevelId, GlobalData.covers[GlobalData.currentlevel.LevelId]);
-			GlobalData.covers.Remove(GlobalData.currentlevel.LevelId); //Cover Migration
-
-			GlobalData.currentlevel.LevelId = "custom_level_" + GlobalData.currentlevel.LevelId;
-			List<Characteristic> chars = new List<Characteristic>();
-			foreach(var diff in GlobalData.GetSong(null).difficulties)
-			{
-				string characteristic = diff.characteristic switch
-				{
-					MapCharacteristic.NinetyDegree => "90Degree",
-					MapCharacteristic.ThreeSixtyDegree => "360Degree",
-					_ => diff.characteristic.ToString(),
-				};
-				if (!chars.Any((x) => x.Name == characteristic))
-				{
-					chars.Add(new Characteristic(characteristic, new string[0]));
-				}
-				Characteristic foundChar = chars.Find((x) => x.Name == characteristic);
-				var list = foundChar.diffs.ToList();
-				list.Add(diff.difficulty.ToString());
-				foundChar.diffs = list.ToArray();
-			}
-			GlobalData.currentlevel.chars = chars.ToArray();
-			GlobalData.allSongs.Add(GlobalData.currentlevel.LevelId, GlobalData.currentlevel);
+			currentlyLoadingSongs.Add(GlobalData.currentlevel.LevelId);
 
 			StateHasChanged();
 			GlobalData.RefreshList();

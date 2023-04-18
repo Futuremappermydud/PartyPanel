@@ -28,6 +28,8 @@ namespace PartyPanelUI.Network
         public Action<NetworkPlayer> PlayerConnected;
         public Action<NetworkPlayer> PlayerDisconnected;
 
+		public static bool isConnected;
+
         public bool Enabled { get; set; } = true;
 
         private List<NetworkPlayer> players = new List<NetworkPlayer>();
@@ -91,7 +93,8 @@ namespace PartyPanelUI.Network
                 PlayerConnected?.Invoke(player);
 
                 handler.BeginReceive(player.buffer, 0, NetworkPlayer.BufferSize, 0, new AsyncCallback(ReadCallback), player);
-            }
+				isConnected = true;
+			}
             catch (Exception e)
             {
                 Logger.Debug(e.ToString());

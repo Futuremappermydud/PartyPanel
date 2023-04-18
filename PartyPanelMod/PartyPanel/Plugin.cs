@@ -11,6 +11,10 @@ using PartyPanel.HarmonyPatches;
 using System.Reflection;
 using BeatSaverSharp;
 using System;
+using System.Runtime.InteropServices;
+using static IPA.Logging.Logger;
+using PartyPanelShared.Models;
+using PartyPanelShared;
 
 namespace PartyPanel
 {
@@ -45,12 +49,34 @@ namespace PartyPanel
             client = new Client();
             client.Start();
 
-            Loader.SongsLoadedEvent += (Loader _, ConcurrentDictionary<string, CustomPreviewBeatmapLevel> __) =>
+            Loader.SongsLoadedEvent += (Loader _, ConcurrentDictionary<string, CustomPreviewBeatmapLevel> x) =>
             {
                 if (beatmapLevelsModel == null) beatmapLevelsModel = Resources.FindObjectsOfTypeAll<BeatmapLevelsModel>().First();
+                var values = beatmapLevelsModel.GetField<Dictionary<string, IPreviewBeatmapLevel>, BeatmapLevelsModel>("_loadedPreviewBeatmapLevels").Values.ToArray();
+                if (masterLevelList != null)
+                {
+                    PlayerData playerData = Resources.FindObjectsOfTypeAll<PlayerDataModel>().FirstOrDefault().playerData;
+                    string[] names = masterLevelList.Select((x) => x.songName).ToArray();
+                    List<CustomPreviewBeatmapLevel> newLevels = x.Where((l) => { return !names.Contains(l.Value.songName); }).Select((l) => l.Value).ToList();
+                    //logger.Info(newLevels.Select(x => x.songName).Aggregate((x, y)=>x + ", " + y));
+                    List<PreviewBeatmapLevel> convertedLevels = new List<PreviewBeatmapLevel>();
+
+                    List<Task<PreviewBeatmapLevel>> tasks = new List<Task<PreviewBeatmapLevel>>();
+
+                    foreach (var level in newLevels)
+                    {
+                        tasks.Add(PartyPanel.Client.ConvertToPacketType(level, playerData));
+                    }
+                    Task.Run(async () =>
+                    {
+                        convertedLevels.AddRange(await Task.WhenAll(tasks));
+
+                        client.client.Send(new Packet(new SongList(convertedLevels.ToArray())).ToBytes());
+                    });
+
+                }
 
                 masterLevelList = new List<IPreviewBeatmapLevel>();
-                var values = beatmapLevelsModel.GetField<Dictionary<string, IPreviewBeatmapLevel>, BeatmapLevelsModel>("_loadedPreviewBeatmapLevels").Values.ToArray();
                 
                 masterLevelList.AddRange(values);
 

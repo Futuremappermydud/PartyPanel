@@ -185,7 +185,6 @@
     <Compile Include="Network\Client.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Shared\CustomSerializationBinder.cs" />
     <Compile Include="Shared\Logger.cs" />
     <Compile Include="Shared\Models\GameplayModifiers.cs" />
     <Compile Include="Shared\Models\Packets\AllSongs.cs" />

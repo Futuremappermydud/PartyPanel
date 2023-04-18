@@ -62,31 +62,22 @@ namespace PartyPanel
                     new Action<LevelScenesTransitionSetupDataSO, LevelCompletionResults>((LevelScenesTransitionSetupDataSO q, LevelCompletionResults r) => { })
                 );
             };
-            if (flow == null || flow.gameObject == null || !flow.gameObject.activeInHierarchy)
+            HMMainThreadDispatcher.instance.Enqueue(() =>
             {
-                Button button = Resources.FindObjectsOfTypeAll<NoTransitionsButton>().Where(x => x != null && x.name == "SoloButton").First();
+                NoTransitionsButton button = Resources.FindObjectsOfTypeAll<NoTransitionsButton>().Where(x => x != null && x.gameObject.name == "SoloButton").FirstOrDefault();
                 button.onClick.Invoke();
-            }
-            if ((level is PreviewBeatmapLevelSO /* && await HasDLCLevel(level.levelID)*/) || level is CustomPreviewBeatmapLevel)
+            });
+            if (true)
             {
                 Logger.Debug("Loading DLC/Custom level...");
                 var result = await GetLevelFromPreview(level);
                 if ( !(result?.isError == true))
                 {
-                    Logger.Debug("level loaded" + result.HasValue.ToString());
+                    Logger.Debug("level loaded " + result.HasValue.ToString());
+                    Logger.Debug("Is Null " + (result.Value.beatmapLevel == null).ToString());
                     SongLoaded(result?.beatmapLevel);
                     return;
                 }
-                Logger.Debug("You Suck Idiot");
-            }
-            else if (level is BeatmapLevelSO)
-            {
-                Logger.Debug("Reading OST data without songloader...");
-                SongLoaded(level as IBeatmapLevel);
-            }
-            else
-            {
-                Logger.Debug($"Skipping unowned DLC ({level.songName})");
             }
         }
 
@@ -95,78 +86,6 @@ namespace PartyPanel
             Logger.Info("df");
             if (!SceneManager.GetActiveScene().name.Contains("Game")) return;
             Resources.FindObjectsOfTypeAll<StandardLevelReturnToMenuController>()?.FirstOrDefault()?.ReturnToMenu();
-        }
-
-        //Returns the closest difficulty to the one provided, preferring lower difficulties first if any exist
-        public static IDifficultyBeatmap GetClosestDifficultyPreferLower(IBeatmapLevel level, BeatmapDifficulty difficulty, BeatmapCharacteristicSO characteristic = null)
-        {
-            //First, look at the characteristic parameter. If there's something useful in there, we try to use it, but fall back to Standard
-
-            var desiredCharacteristic = level.beatmapLevelData.difficultyBeatmapSets.FirstOrDefault(x => x.beatmapCharacteristic.serializedName == (characteristic?.serializedName ?? "Standard")) ?? level.beatmapLevelData.difficultyBeatmapSets.First();
-
-            IDifficultyBeatmap[] availableMaps =
-                level
-                .beatmapLevelData
-                .difficultyBeatmapSets
-                .FirstOrDefault(x => x.beatmapCharacteristic.serializedName == desiredCharacteristic.beatmapCharacteristic.serializedName)
-                .difficultyBeatmaps
-                .OrderBy(x => x.difficulty)
-                .ToArray();
-
-            IDifficultyBeatmap ret = availableMaps.FirstOrDefault(x => x.difficulty == difficulty);
-
-            if (ret is CustomDifficultyBeatmap)
-            {
-                var extras = Collections.RetrieveExtraSongData(ret.level.levelID);
-                var requirements = extras?._difficulties.First(x => x._difficulty == ret.difficulty).additionalDifficultyData._requirements;
-                if (
-                    (requirements?.Count() > 0) &&
-                    (!requirements?.ToList().All(x => Collections.capabilities.Contains(x)) ?? false)
-                ) ret = null;
-            }
-
-            if (ret == null)
-            {
-                ret = GetLowerDifficulty(availableMaps, difficulty, desiredCharacteristic.beatmapCharacteristic);
-            }
-            if (ret == null)
-            {
-                ret = GetHigherDifficulty(availableMaps, difficulty, desiredCharacteristic.beatmapCharacteristic);
-            }
-
-            return ret;
-        }
-
-        //Returns the next-lowest difficulty to the one provided
-        private static IDifficultyBeatmap GetLowerDifficulty(IDifficultyBeatmap[] availableMaps, BeatmapDifficulty difficulty, BeatmapCharacteristicSO characteristic)
-        {
-            var ret = availableMaps.TakeWhile(x => x.difficulty < difficulty).LastOrDefault();
-            if (ret is CustomDifficultyBeatmap)
-            {
-                var extras = Collections.RetrieveExtraSongData(ret.level.levelID);
-                var requirements = extras?._difficulties.First(x => x._difficulty == ret.difficulty).additionalDifficultyData._requirements;
-                if (
-                    (requirements?.Count() > 0) &&
-                    (!requirements?.ToList().All(x => Collections.capabilities.Contains(x)) ?? false)
-                ) ret = null;
-            }
-            return ret;
-        }
-
-        //Returns the next-highest difficulty to the one provided
-        private static IDifficultyBeatmap GetHigherDifficulty(IDifficultyBeatmap[] availableMaps, BeatmapDifficulty difficulty, BeatmapCharacteristicSO characteristic)
-        {
-            var ret = availableMaps.SkipWhile(x => x.difficulty < difficulty).FirstOrDefault();
-            if (ret is CustomDifficultyBeatmap)
-            {
-                var extras = Collections.RetrieveExtraSongData(ret.level.levelID);
-                var requirements = extras?._difficulties.First(x => x._difficulty == ret.difficulty).additionalDifficultyData._requirements;
-                if (
-                    (requirements?.Count() > 0) &&
-                    (!requirements?.ToList().All(x => Collections.capabilities.Contains(x)) ?? false)
-                ) ret = null;
-            }
-            return ret;
         }
 
         public static async Task<bool> HasDLCLevel(string levelId, AdditionalContentModel additionalContentModel = null)
@@ -202,7 +121,11 @@ namespace PartyPanel
                     result = await beatmapLevelsModel.GetBeatmapLevelAsync(level.levelID, token);
                 }
                 catch (OperationCanceledException) { }
-                if (result?.isError == true || result?.beatmapLevel == null) return null; //Null out entirely in case of error
+                if (result?.isError == true || result?.beatmapLevel == null)
+                {
+                    Logger.Error("Failed to load Level");
+                    return null; //Null out entirely in case of error
+                }
                 return result;
             }
             return null;

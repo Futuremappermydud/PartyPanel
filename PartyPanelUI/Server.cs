@@ -160,10 +160,17 @@ namespace PartyPanelUI
                 Logger.Info(x.Lists.Count.ToString());
                 foreach (var list in x.Lists)
                 {
-                    Logger.Info("Bruh");
                     Server_PacketRecieved(null, new Packet(list));
                 }
             }
         }
-    }
+
+		public static List<SongList> RecreateSongLists(PreviewBeatmapLevel[] songs)
+		{
+			PreviewBeatmapLevel[] newLevels = songs;
+
+			List<SongList> songLists = newLevels.Chunk(20).Select(x => new SongList(x.ToArray())).ToList();
+			return songLists;
+		}
+	}
 }

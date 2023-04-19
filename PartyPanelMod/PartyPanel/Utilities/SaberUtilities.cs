@@ -69,12 +69,9 @@ namespace PartyPanel
             });
             if (true)
             {
-                Logger.Debug("Loading DLC/Custom level...");
                 var result = await GetLevelFromPreview(level);
                 if ( !(result?.isError == true))
                 {
-                    Logger.Debug("level loaded " + result.HasValue.ToString());
-                    Logger.Debug("Is Null " + (result.Value.beatmapLevel == null).ToString());
                     SongLoaded(result?.beatmapLevel);
                     return;
                 }
@@ -83,13 +80,19 @@ namespace PartyPanel
 
         public static void ReturnToMenu()
         {
-            Logger.Info("df");
-            if (!SceneManager.GetActiveScene().name.Contains("Game")) return;
-            Resources.FindObjectsOfTypeAll<StandardLevelReturnToMenuController>()?.FirstOrDefault()?.ReturnToMenu();
+            HMMainThreadDispatcher.instance.Enqueue(() =>
+            {
+                if (!SceneManager.GetActiveScene().name.Contains("Game")) return;
+                Resources.FindObjectsOfTypeAll<StandardLevelReturnToMenuController>()?.FirstOrDefault()?.ReturnToMenu();
+            });
         }
 
         public static async Task<bool> HasDLCLevel(string levelId, AdditionalContentModel additionalContentModel = null)
         {
+            if(!levelId.StartsWith("custom_level_"))
+            {
+                Logger.Info(levelId);
+            }
             additionalContentModel = additionalContentModel ?? Resources.FindObjectsOfTypeAll<AdditionalContentModel>().FirstOrDefault();
 
             if (additionalContentModel != null)

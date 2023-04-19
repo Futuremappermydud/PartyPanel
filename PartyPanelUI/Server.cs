@@ -64,6 +64,7 @@ namespace PartyPanelUI
                 return ms.ToArray();
             }
         }
+		static int F = 0;
         public static void Server_PacketRecieved(NetworkPlayer player, Packet packet)
         {
             if (packet.Type == PacketType.PreviewSong)
@@ -100,7 +101,9 @@ namespace PartyPanelUI
                 SongList songList = packet.SpecificPacket as SongList;
                 foreach (var song in songList.Levels)
                 {
-                    if (!string.IsNullOrEmpty(song?.coverPath))
+					song.LevelId = new string(song.LevelId.Take(53).ToArray());
+					F++;
+					if (!string.IsNullOrEmpty(song?.coverPath))
                     {
                         if (!(song.cover.Length > 1))
                         {
@@ -120,25 +123,27 @@ namespace PartyPanelUI
                             GlobalData.covers.Add(song.LevelId, ""); ;
                         }
                     }
-                }
-                GlobalData.songLists.Add(songList);
-                foreach(var song in songList.Levels)
-                {
-                    if (BeatSaverBrowserManager.convertedBeatSaverLevels.Any((x) => "custom_level_" + x.LevelId == song.LevelId))
-                    {
-                        var x = BeatSaverBrowserManager.convertedBeatSaverLevels.Find((x) => "custom_level_" + x.LevelId == song.LevelId);
+
+					if (BeatSaverBrowserManager.convertedBeatSaverLevels.Any((x) => "custom_level_" + x.LevelId == song.LevelId))
+					{
+						var x = BeatSaverBrowserManager.convertedBeatSaverLevels.Find((x) => "custom_level_" + x.LevelId == song.LevelId);
 						GlobalData.covers.TryAdd("custom_level_" + x.LevelId, GlobalData.covers[x.LevelId]);
 						GlobalData.covers.Remove(x.LevelId); //Cover Migration
 
 						x.LevelId = "custom_level_" + x.LevelId;
-                        x.chars = song.chars ;
-                        GlobalData.allSongs.Add(x.LevelId, x);
-                    }
-                    else
-                    {
-                        GlobalData.allSongs.Add(song.LevelId, song);
-                    }
-                }
+						x.chars = song.chars;
+						x.Owned = song.Owned;
+						if (!GlobalData.allSongs.ContainsKey(x.LevelId))
+							GlobalData.allSongs.Add(x.LevelId, x);
+					}
+					else
+					{
+						if (!GlobalData.allSongs.ContainsKey(song.LevelId)) 
+							GlobalData.allSongs.Add(song.LevelId, song);
+					}
+				}
+				File.WriteAllLines("D:/bruh" + F.ToString() + ".txt", songList.Levels.Select((x) => x.Name + x.LevelId));
+                GlobalData.songLists.Add(songList);
                 if (GlobalData.songLists.IndexOf(songList) == 0)
                 {
                     GlobalData.RefreshList();

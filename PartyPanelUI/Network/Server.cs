@@ -94,6 +94,7 @@ namespace PartyPanelUI.Network
 
                 handler.BeginReceive(player.buffer, 0, NetworkPlayer.BufferSize, 0, new AsyncCallback(ReadCallback), player);
 				isConnected = true;
+				Logger.Info("Connected");
 			}
             catch (Exception e)
             {

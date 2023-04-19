@@ -109,15 +109,40 @@ namespace PartyPanelUI
         }
         public static bool DynamicOwns(string LevelId)
         {
-            //In case of ost this if statement is needed
-            if (!allSongs.ContainsKey(LevelId))
+			string newLevelID = LevelId.StartsWith("custom_level_") ? LevelId : "custom_level_" + LevelId;
+			newLevelID = new string(newLevelID.Take(53).ToArray());
+			//In case of ost this if statement is needed
+			if (LevelId.StartsWith("custom_level_"))
             {
-                return allSongs.ContainsKey(LevelId.StartsWith("custom_level_") ? LevelId : "custom_level_" + LevelId);
+                bool contains = allSongs.ContainsKey(newLevelID);
+				if (contains)
+				{
+					if (allSongs[newLevelID].Owned)
+						return true;
+					else
+					{
+						if (!string.IsNullOrWhiteSpace(allSongs[newLevelID].OwnedJustificaton))
+						{
+							return false;
+						}
+						else
+							return true;
+					}
+				}
+				else
+				{
+					return false;
+				}
             }
             else
-            {
+			{
+				//Beatsaver
+				if (!allSongs.Keys.Contains(LevelId))
+				{
+					return false;
+				}
                 //ost or dlc
-                return true;
+                return allSongs[LevelId].Owned;
             }
         }
         public static Characteristic currentchar
